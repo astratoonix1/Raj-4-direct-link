@@ -1,1 +1,9 @@
 # Raj-4-direct-link
+Raj-4-direct-link/
+├── Dockerfile
+├── go.mod
+├── main.go
+├── catalog.json
+├── catalog.example.json   (optional, sirf format dekhne ke liye)
+└── web/
+    └── index.html
