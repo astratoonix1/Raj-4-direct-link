@@ -1,0 +1,617 @@
+<title>ASTRATOONIX</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: fixed nav over a full-bleed hero; rows scroll sideways below it. One deliberate cinematic dark look, so no light theme. */
+:root{
+  --bg:#0c0a0e; --bg-2:#151218; --card:#1d1a21; --fg:#f4f2f5; --muted:#a8a2ae;
+  --line:rgba(255,255,255,.13); --accent:#e50914; --accent-hi:#ff2a35;
+  --display:"Bebas Neue","Impact","Arial Narrow",sans-serif;
+  --body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --g:clamp(16px,4vw,56px); --nav-h:76px;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:400 15px/1.55 var(--body);overflow-x:hidden}
+button,input{font:inherit}
+a{color:inherit}
+.gx{padding-left:max(var(--g),env(safe-area-inset-left,0px));padding-right:max(var(--g),env(safe-area-inset-right,0px))}
+:focus-visible{outline:2px solid #fff;outline-offset:2px}
+svg{display:block}
+
+/* NAV */
+.nav{position:fixed;top:0;left:0;right:0;z-index:50;padding-top:env(safe-area-inset-top,0px);background:linear-gradient(to bottom,rgba(12,10,14,.9),rgba(12,10,14,0));transition:background .3s,box-shadow .3s}
+.nav.solid{background:rgba(12,10,14,.97);box-shadow:0 1px 0 var(--line)}
+.nav-in{display:flex;align-items:center;gap:clamp(12px,2.5vw,28px);min-height:64px;flex-wrap:wrap}
+.logo{font:400 clamp(1.7rem,3vw,2.2rem)/1 var(--display);letter-spacing:.09em;color:var(--accent);text-decoration:none;text-shadow:0 0 24px rgba(229,9,20,.5);white-space:nowrap}
+.links{display:flex;gap:clamp(14px,2vw,24px);list-style:none;margin:0;padding:0}
+.links a{color:#d3ced8;text-decoration:none;font-size:.9rem;white-space:nowrap;transition:color .2s}
+.links a:hover{color:#fff}
+.links a.on{color:#fff;font-weight:600}
+.spacer{flex:1}
+.ibtn{background:none;border:0;color:#fff;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;cursor:pointer;transition:background .2s}
+.ibtn:hover{background:rgba(255,255,255,.12)}
+.prof{position:relative}
+.prof-btn{display:flex;align-items:center;gap:6px;background:none;border:0;color:#fff;cursor:pointer;padding:4px;border-radius:8px}
+.avatar{width:32px;height:32px;border-radius:6px;display:grid;place-items:center;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--accent),#ff7a45)}
+.avatar.b{background:linear-gradient(135deg,#2a6df4,#37d5d6)}
+.avatar.c{background:linear-gradient(135deg,#8a3ffc,#ff6fb1)}
+.caret{transition:transform .2s}
+.prof-btn[aria-expanded=true] .caret{transform:rotate(180deg)}
+.menu{position:absolute;right:0;top:calc(100% + 8px);width:min(240px,calc(100vw - 32px));background:rgba(21,18,24,.98);border:1px solid var(--line);border-radius:10px;padding:8px;box-shadow:0 20px 50px rgba(0,0,0,.6)}
+.menu a,.menu button.mi{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:6px;color:#e7e3ea;background:none;border:0;text-decoration:none;font-size:.9rem;cursor:pointer;text-align:left}
+.menu a:hover,.menu button.mi:hover{background:rgba(255,255,255,.08)}
+.menu hr{border:0;border-top:1px solid var(--line);margin:6px 0}
+.menu .who{padding:6px 10px;color:var(--muted);font-size:.8rem}
+@media(max-width:760px){.links{order:5;width:100%;overflow-x:auto;padding-bottom:10px;scrollbar-width:none}.nav-in{min-height:52px}:root{--nav-h:104px}}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:6px;padding:.62em 1.4em;font:600 1rem var(--body);cursor:pointer;text-decoration:none;transition:transform .15s,background .2s}
+.btn:active{transform:scale(.97)}
+.btn.light{background:#fff;color:#111}.btn.light:hover{background:#d9d6dc}
+.btn.glass{background:rgba(120,114,128,.55);color:#fff}.btn.glass:hover{background:rgba(120,114,128,.35)}
+.btn.red{background:var(--accent);color:#fff}.btn.red:hover{background:var(--accent-hi)}
+.btn.block{width:100%}
+.ico{width:32px;height:32px;border-radius:50%;border:2px solid rgba(255,255,255,.55);background:rgba(20,17,23,.75);color:#fff;display:grid;place-items:center;cursor:pointer;padding:0;transition:border-color .2s,background .2s}
+.ico:hover{border-color:#fff}
+.ico.play{background:#fff;color:#111;border-color:#fff}
+.ico.on{border-color:var(--accent);color:var(--accent-hi)}
+.ico.lg{width:46px;height:46px}
+
+/* HERO */
+.view{min-height:60vh}
+.view.pad{padding-top:var(--nav-h)}
+.hero{position:relative;min-height:clamp(460px,56vw,700px);display:flex;align-items:flex-end;overflow:hidden;isolation:isolate}
+.hero .art{position:absolute;inset:0;z-index:-2;animation:fade .9s both}
+.hero::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(to top,var(--bg) 3%,rgba(12,10,14,0) 48%),linear-gradient(to right,rgba(12,10,14,.88),rgba(12,10,14,0) 68%)}
+.hero-in{width:100%;display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding-top:150px;padding-bottom:clamp(36px,7vw,100px)}
+.hero-copy{max-width:min(580px,100%);min-width:0;animation:rise .7s both}
+.tag{font-size:.75rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:#ffb3b8;display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.tag b{display:inline-block;width:18px;height:3px;background:var(--accent)}
+.h-title{font:400 clamp(3rem,9vw,6.6rem)/.92 var(--display);letter-spacing:.02em;margin:0 0 12px;text-wrap:balance;text-shadow:0 4px 30px rgba(0,0,0,.6)}
+.meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;font-size:.88rem;color:#cfc9d4}
+.match{color:#5fe08a;font-weight:700}
+.pill{border:1px solid rgba(255,255,255,.45);border-radius:3px;padding:0 6px;font-size:.75rem;color:#ddd;line-height:1.6;white-space:nowrap}
+.h-desc{margin:14px 0 20px;font-size:clamp(.92rem,1.5vw,1.1rem);color:#e6e2e9;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;max-width:52ch}
+.cta{display:flex;flex-wrap:wrap;gap:12px}
+.dots{display:flex;gap:8px;padding-bottom:6px}
+.dots button{width:26px;height:4px;border:0;border-radius:2px;background:rgba(255,255,255,.3);cursor:pointer;padding:0;transition:background .3s,width .3s}
+.dots button.on{background:var(--accent);width:40px}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+/* ROWS */
+.rows{margin-top:clamp(-70px,-5vw,-20px);position:relative;z-index:2}
+.row{position:relative;margin-top:clamp(4px,1.2vw,14px)}
+.row h2{margin:0 0 2px;font:600 clamp(1rem,1.6vw,1.25rem)/1.3 var(--body);color:#ebe8ee}
+.scroller{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;padding-top:38px;padding-bottom:38px;margin-top:-30px;margin-bottom:-30px;cursor:grab;-webkit-overflow-scrolling:touch}
+.scroller::-webkit-scrollbar{display:none}
+.scroller.drag{cursor:grabbing}
+.rbtn{position:absolute;top:30px;bottom:30px;width:max(var(--g),44px);z-index:8;border:0;color:#fff;cursor:pointer;display:grid;place-items:center;opacity:0;transition:opacity .2s;background:rgba(12,10,14,.6)}
+.rbtn.l{left:0}.rbtn.r{right:0}
+.row:hover .rbtn{opacity:1}
+@media(hover:none){.rbtn{display:none}}
+
+/* CARDS */
+.card{position:relative;flex:0 0 clamp(150px,22vw,280px);aspect-ratio:16/9;border-radius:6px;overflow:hidden;background:var(--card);cursor:pointer;transition:transform .28s cubic-bezier(.2,.7,.2,1),box-shadow .28s;user-select:none;-webkit-user-select:none}
+.art{background:var(--art) center/cover no-repeat}
+.card .art{position:absolute;inset:0}
+.scrim{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.82),rgba(0,0,0,0) 55%)}
+.ctitle{position:absolute;left:10px;right:10px;bottom:8px;margin:0;font:400 clamp(1.15rem,1.8vw,1.5rem)/1 var(--display);letter-spacing:.04em;text-shadow:0 2px 8px rgba(0,0,0,.7)}
+.prog{position:absolute;left:0;right:0;bottom:0;height:4px;background:rgba(255,255,255,.25)}
+.prog i{display:block;height:100%;background:var(--accent)}
+.card.cw .ctitle{bottom:12px}
+.hov{display:none}
+.cmeta{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;font-size:.72rem;color:#ddd}
+.cgen{font-size:.7rem;color:#bdb7c3;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acts{display:flex;gap:6px;margin-bottom:6px}
+.acts .ico{width:28px;height:28px}
+@media(hover:hover){
+  .hov{display:block;position:absolute;left:0;right:0;bottom:0;padding:10px 10px 8px;background:linear-gradient(transparent,rgba(0,0,0,.95) 35%);opacity:0;transform:translateY(8px);transition:opacity .25s,transform .25s}
+  .card:hover,.card:focus-within{transform:scale(1.2);z-index:6;box-shadow:0 18px 44px rgba(0,0,0,.7)}
+  .card:hover .hov,.card:focus-within .hov{opacity:1;transform:none}
+  .card:hover .ctitle,.card:focus-within .ctitle{opacity:0}
+  .scroller>.card:first-child,.scroller>.t10:first-child .card{transform-origin:left center}
+  .scroller>.card:last-child,.scroller>.t10:last-child .card{transform-origin:right center}
+}
+.t10{flex:0 0 clamp(190px,26vw,310px);display:flex;align-items:flex-end}
+.t10 .num{font:400 clamp(8rem,15vw,12rem)/.78 var(--display);color:var(--bg);-webkit-text-stroke:3px #6d6772;margin-right:-16px;position:relative;z-index:0;letter-spacing:-.02em}
+.t10 .card{flex:0 0 58%;aspect-ratio:2/3;z-index:1}
+.t10 .ctitle{font-size:clamp(1.1rem,1.6vw,1.4rem)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,210px),1fr));gap:22px 12px;padding-bottom:40px}
+.grid .card{flex:none;width:100%}
+@media(hover:hover){.grid .card:hover{transform:scale(1.08)}}
+
+/* PAGES */
+.page-h{font:400 clamp(2.2rem,5vw,3.4rem)/1 var(--display);letter-spacing:.03em;margin:28px 0 16px}
+.sub{color:var(--muted);margin:0 0 24px}
+.empty{padding:60px 0;color:var(--muted);text-align:center;display:grid;gap:14px;justify-items:center}
+.empty h3{margin:0;color:#fff;font:400 2rem var(--display);letter-spacing:.04em}
+.searchbox{display:flex;align-items:center;gap:12px;background:var(--bg-2);border:1px solid var(--line);border-radius:10px;padding:0 16px;max-width:760px;transition:border-color .2s}
+.searchbox:focus-within{border-color:var(--accent)}
+.searchbox input{flex:1;min-width:0;background:none;border:0;color:#fff;font-size:1.15rem;padding:16px 0;outline:none}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 28px}
+.chip{background:var(--bg-2);border:1px solid var(--line);color:#ddd;border-radius:999px;padding:6px 14px;font-size:.85rem;cursor:pointer;transition:background .2s,border-color .2s}
+.chip:hover{border-color:var(--accent);background:#221a1e}
+
+/* DETAIL */
+.d-hero{position:relative;min-height:clamp(420px,52vw,620px);display:flex;align-items:flex-end;overflow:hidden;isolation:isolate}
+.d-hero .art{position:absolute;inset:0;z-index:-2;animation:fade .8s both}
+.d-hero::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(to top,var(--bg) 2%,rgba(12,10,14,0) 55%),linear-gradient(to right,rgba(12,10,14,.85),rgba(12,10,14,0) 65%)}
+.d-hero .hero-in{display:block}
+.d-body{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:24px 48px;padding-top:12px;padding-bottom:20px}
+.d-body p{margin:0 0 14px;font-size:1.02rem;color:#e6e2e9}
+.kv{font-size:.9rem;color:var(--muted);margin:0 0 10px}
+.kv b{color:#d8d3dc;font-weight:500}
+@media(max-width:800px){.d-body{grid-template-columns:minmax(0,1fr)}}
+
+/* AUTH */
+.auth{position:relative;display:grid;place-items:center;padding-top:calc(var(--nav-h) + 20px);padding-bottom:70px;overflow:hidden;isolation:isolate}
+.auth .art{position:absolute;inset:-20px;z-index:-2;filter:blur(6px) brightness(.55)}
+.auth::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(to bottom,rgba(12,10,14,.5),var(--bg))}
+.auth-card{width:min(100%,420px);background:rgba(10,8,12,.86);border:1px solid var(--line);border-radius:12px;padding:clamp(22px,5vw,40px)}
+.auth-card h1{font:400 2.4rem/1 var(--display);letter-spacing:.04em;margin:0 0 18px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;background:#1b171e;border-radius:8px;padding:4px;margin-bottom:20px}
+.tabs button{background:none;border:0;color:#bbb;padding:9px;border-radius:6px;cursor:pointer;font-weight:600;transition:background .2s,color .2s}
+.tabs button.on{background:var(--accent);color:#fff}
+.field{display:grid;gap:6px;margin-bottom:14px}
+.field label{font-size:.8rem;color:var(--muted)}
+.field input{background:#25212a;border:1px solid transparent;border-radius:6px;color:#fff;padding:.85em 1em;outline:none;transition:border-color .2s}
+.field input:focus{border-color:var(--accent)}
+.err{color:#ff8a92;font-size:.85rem;min-height:1.3em;margin:0 0 8px}
+.fine{font-size:.78rem;color:var(--muted);margin:14px 0 0}
+
+/* PLAYER */
+.player{position:fixed;inset:0;z-index:100;background:#000;display:flex;flex-direction:column;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+.p-top{display:flex;align-items:center;gap:12px;padding-top:12px;padding-bottom:12px}
+.p-stage{flex:1;min-height:0;position:relative;display:grid;place-items:center;overflow:hidden}
+.p-stage .art{position:absolute;inset:0;opacity:.85}
+.p-note{position:relative;text-align:center;max-width:44ch;padding:0 16px;color:#e8e4eb;text-shadow:0 2px 14px #000}
+.p-note h2{font:400 clamp(2.4rem,7vw,4.5rem)/1 var(--display);margin:0 0 8px;letter-spacing:.03em}
+.p-bar{padding-top:14px;padding-bottom:18px;background:linear-gradient(transparent,rgba(0,0,0,.8))}
+.track{height:5px;background:rgba(255,255,255,.25);border-radius:3px;overflow:hidden;margin-bottom:10px}
+.track i{display:block;height:100%;width:0;background:var(--accent)}
+.p-ctl{display:flex;align-items:center;gap:14px;font-size:.85rem;color:#ddd}
+
+/* MISC */
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:#fff;color:#111;padding:10px 18px;border-radius:8px;font-weight:600;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:120;max-width:calc(100vw - 32px)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+footer{margin-top:50px;padding-top:34px;padding-bottom:40px;border-top:1px solid var(--line);color:var(--muted);font-size:.85rem}
+.f-in{display:flex;flex-wrap:wrap;gap:14px 40px;justify-content:space-between;align-items:flex-start}
+.f-in .logo{font-size:1.6rem}
+.f-links{display:flex;flex-wrap:wrap;gap:8px 24px}
+.f-links a{text-decoration:none}.f-links a:hover{color:#fff}
+.by{margin-top:20px;font-size:.8rem}
+.by b{color:#fff;font-weight:600}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+
+<header class="nav" id="nav">
+  <div class="nav-in gx">
+    <a class="logo" href="#home" aria-label="ASTRATOONIX home">ASTRATOONIX</a>
+    <ul class="links" id="links">
+      <li><a href="#home" data-v="home">Home</a></li>
+      <li><a href="#tv" data-v="tv">TV Shows</a></li>
+      <li><a href="#movies" data-v="movies">Movies</a></li>
+      <li><a href="#mylist" data-v="mylist">My List</a></li>
+    </ul>
+    <span class="spacer"></span>
+    <a class="ibtn" href="#search" id="navSearch" aria-label="Search" data-v="search"></a>
+    <div class="prof" id="prof">
+      <button class="prof-btn" id="profBtn" aria-haspopup="true" aria-expanded="false" aria-controls="menu" aria-label="Profile menu">
+        <span class="avatar" id="avatar">G</span>
+        <svg class="caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="menu" id="menu" hidden></div>
+    </div>
+  </div>
+</header>
+
+<main class="view" id="view"></main>
+
+<footer class="gx">
+  <div class="f-in">
+    <div>
+      <a class="logo" href="#home">ASTRATOONIX</a>
+      <p style="margin:8px 0 0">Stream the Universe.</p>
+    </div>
+    <nav class="f-links" aria-label="Footer">
+      <a href="#home">Home</a><a href="#tv">TV Shows</a><a href="#movies">Movies</a><a href="#mylist">My List</a><a href="#search">Search</a><a href="#login">Sign In</a>
+    </nav>
+  </div>
+  <p class="by">&copy; 2026 ASTRATOONIX. Demo catalogue: every title, cast name and description is fictional. Built by <b>Raj Dev</b>.</p>
+</footer>
+
+<div class="player" id="player" hidden role="dialog" aria-modal="true" aria-label="Player">
+  <div class="p-top gx">
+    <button class="ico lg" id="pClose" aria-label="Close player"></button>
+    <span id="pTitle" style="font-weight:600"></span>
+  </div>
+  <div class="p-stage" id="pStage">
+    <div class="art" id="pArt"></div>
+    <div class="p-note">
+      <h2 id="pBig"></h2>
+      <p>Demo playback. Connect your stream source to play real video here.</p>
+    </div>
+  </div>
+  <div class="p-bar gx">
+    <div class="track"><i id="pFill"></i></div>
+    <div class="p-ctl">
+      <button class="ico lg" id="pPlay" aria-label="Play or pause"></button>
+      <span id="pTime">0:00</span>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+/* ============ DATA (fictional demo catalogue) ============ */
+// [title, type (s = show, m = movie), year, rating, duration, genres, hue, motif, description, cast]
+const RAW=[
+["Neon Monsoon","s",2026,"U/A 16+","2 Seasons",["Action","Sci-Fi"],340,1,"In a rain-soaked megacity, a courier with a stolen memory chip has one night to reach the only person who can read it.",["Aarav Menon","Ishita Rao","Dev Khurana","Tara Bose"]],
+["The Last Lantern Keeper","m",2025,"U/A 13+","1h 48m",["Fantasy","Adventure"],35,0,"When the final lantern flickers, a young keeper must cross the Ashen Hills to relight the sky before the dark reaches home.",["Meera Joshi","Kabir Anand","Neel Sethi"]],
+["Midnight Chai Club","s",2025,"U/A 13+","3 Seasons",["Comedy","Drama"],28,3,"Five strangers meet at a 2 a.m. tea stall and accidentally start the city's most chaotic support group.",["Rohan Pillai","Sanya Kapoor","Vikram Das","Pooja Nair"]],
+["Hollow Hill","m",2026,"A","1h 36m",["Horror","Thriller"],275,0,"A family moves into a village where every house has an empty room that nobody will talk about.",["Anjali Verma","Samar Qureshi","Leela Iyer"]],
+["Orbit Breakers","m",2026,"U/A 13+","2h 04m",["Action","Sci-Fi"],205,2,"A rogue crew of salvage pilots races a collapsing space station to rescue a hundred sleeping passengers.",["Karan Malhotra","Zoya Ali","Rishi Bedi","Nina D'Souza"]],
+["Paper Tigers","s",2024,"U/A 16+","4 Seasons",["Action","Drama"],12,1,"Street kids from the same lane grow up on opposite sides of a boxing league that runs the whole city.",["Arjun Tiwari","Mehr Shah","Bunty Gill"]],
+["Kaala Kothi","m",2025,"A","1h 52m",["Horror","Mystery"],300,1,"A restoration crew opens the sealed wing of a colonial mansion and wakes something that remembers every name.",["Ritu Sharma","Hemant Dutta","Ira Bhatt"]],
+["Laddoo Labs","s",2026,"U","2 Seasons",["Comedy","Family"],48,3,"Two sweet-shop heirs turn the family kitchen into a science lab. Every batch does something unexpected.",["Tanmay Gupta","Riya Saxena","Chotu Mishra"]],
+["Skyward Bazaar","m",2024,"U","1h 41m",["Fantasy","Adventure"],190,0,"A market that floats between clouds loses its anchor, and one stall girl has to haggle with the wind itself.",["Diya Rathore","Veer Kohli","Mitali Sen"]],
+["Static Bloom","s",2026,"U/A 16+","1 Season",["Sci-Fi","Drama"],160,2,"Flowers begin to broadcast radio signals across a quiet valley, and a lonely engineer decides to answer.",["Naina Fernandes","Omkar Patil","Yusuf Khan"]],
+["The Duel at Dhanush Ghat","m",2025,"U/A 16+","2h 12m",["Action","Drama"],20,0,"Two retired archers meet at dawn on the riverbank to settle a rivalry that started forty winters ago.",["Raghav Chauhan","Shanta Devi","Mohan Lal Rao"]],
+["Whisper Well","s",2025,"A","2 Seasons",["Horror","Mystery"],250,3,"Every villager who leans into the old well hears a secret meant for someone else. Then the secrets start coming true.",["Kiran Bhatia","Sapna Thakur","Aditya Rane"]],
+["Turbo Tiffin","m",2026,"U","1h 33m",["Comedy","Family"],55,1,"A lunchbox delivery guy has ninety minutes to cross the city on a rickshaw that was never meant to go this fast.",["Gopal Yadav","Simran Arora","Jeet Banerjee"]],
+["Cinder & Salt","s",2024,"U/A 16+","3 Seasons",["Fantasy","Drama"],8,3,"Two rival salt-farm families share a kingdom, a curse and a wedding neither side wants to attend.",["Ananya Reddy","Dhruv Mehra","Kavya Nambiar"]],
+["Gravity Gharana","m",2025,"U/A 13+","1h 55m",["Comedy","Sci-Fi"],265,2,"A joint family wins the first lunar apartment lottery and brings every cousin, aunt and pressure cooker along.",["Harsh Vora","Bhavna Kulkarni","Sunil Garg"]],
+["Red Mesa Run","m",2024,"U/A 16+","1h 59m",["Action","Thriller"],5,0,"A desert courier carries one sealed crate across three hundred kilometres where everyone wants it open.",["Imran Sheikh","Dolly Pereira","Nikhil Rao"]],
+["Night Market Ghosts","s",2025,"U/A 13+","2 Seasons",["Horror","Comedy"],285,1,"The ghosts of a shut-down bazaar are hired to haunt it back to profit, with mixed results.",["Chitra Menon","Bobby Singh","Alka Pandey"]],
+["Zero Hour Express","m",2026,"U/A 16+","2h 01m",["Action","Thriller"],215,1,"A night train, one working phone and a countdown nobody on board can explain.",["Aditi Rao","Jai Kapadia","Mohit Sood"]],
+["Moonlit Mechanic","s",2025,"U/A 13+","2 Seasons",["Sci-Fi","Adventure"],235,3,"A garage on the moon repairs ships for every species in the system and keeps one broken thing for itself.",["Pranav Iyer","Lakshmi Das","Ocho"]],
+["Biryani Wars","s",2024,"U/A 13+","3 Seasons",["Comedy","Drama"],32,2,"Three cousins, one inherited recipe and a food festival that turns into an actual battlefield.",["Imtiaz Qadri","Shabana Mir","Rajat Oberoi"]],
+["The Glass Monsoon","m",2025,"U/A 13+","2h 09m",["Drama","Romance"],185,3,"A glassblower and a weather forecaster fall for each other during the longest rainy season in memory.",["Ishaan Bagchi","Meghna Roy","Padma Krishnan"]],
+["Pixel Sage","s",2026,"U","2 Seasons",["Fantasy","Family"],130,2,"A retired video-game wizard is pulled back into a world made of tiny squares to teach a new hero the ropes.",["Aryan Gill","Tia Menezes","Pixel (voice)"]],
+["Cold Harbor","m",2024,"U/A 16+","1h 47m",["Thriller","Drama"],200,0,"A harbour inspector finds one container that appears in no register and was never opened by anyone.",["Rahul Nair","Gita Fonseca","Max Lobo"]],
+["Samosa Samurai","m",2026,"U/A 13+","1h 38m",["Comedy","Action"],40,0,"A street cook with a very sharp ladle is mistaken for a legendary swordsman and cannot find a polite way out.",["Chirag Bhandari","Yuki Tanaka","Lalit Mohan"]],
+["Ember Court","s",2025,"U/A 16+","2 Seasons",["Fantasy","Drama"],15,1,"In a court lit only by fire, every advisor has a flame that goes out when they lie.",["Sheetal Ahuja","Armaan Dev","Roshni Pal"]],
+["Lighthouse 13","m",2025,"A","1h 44m",["Horror","Thriller"],220,3,"The keeper's log has thirteen entries. The twelfth is in handwriting that is not his.",["Basu Ghosh","Elena Dias","Tariq Hussain"]],
+["Rickshaw Rocketeers","s",2026,"U","1 Season",["Comedy","Adventure"],60,2,"A gang of auto drivers rebuilds their rickshaws into rockets to win the first inter-city space derby.",["Montu Sharma","Gudiya Roy","Pappu Ansari"]],
+["Echo Valley","s",2024,"U/A 13+","3 Seasons",["Drama","Mystery"],150,0,"A valley where every sound returns a day late brings a radio journalist face to face with her own voice.",["Smita Joglekar","Daniel Pinto","Vedika Rao"]],
+["Thunder Tantra","m",2025,"U/A 16+","2h 15m",["Action","Fantasy"],255,1,"A monk who can call lightning takes a job as a bodyguard and regrets it by lunchtime.",["Yash Rajput","Kritika Naidu","Dorje Bhutia"]],
+["Dream Cartographers","s",2026,"U/A 13+","1 Season",["Sci-Fi","Adventure"],290,2,"A team maps other people's dreams for a living until one map starts leading somewhere that is not a dream.",["Sia Lamba","Rudra Pratap","Hana Seo"]],
+["Haunted Hostel","s",2025,"U/A 13+","2 Seasons",["Horror","Comedy"],95,1,"Hostel rule number one: do not go to the fourth floor. Hostel rule number two: the fourth floor has snacks.",["Nakul Bhasin","Pari Khanna","Ghost Warden Ramesh"]],
+["Storm Chasers of Spiti","m",2026,"U/A 13+","1h 57m",["Adventure","Drama"],170,0,"A photographer and a mule driver follow a blizzard across the high desert to reach a village before it is cut off.",["Tenzin Dorje","Aisha Malik","Sonam Angmo"]]
+];
+const ITEMS=RAW.map((r,i)=>({id:i+1,title:r[0],type:r[1],year:r[2],rating:r[3],dur:r[4],genres:r[5],hue:r[6],motif:r[7],desc:r[8],cast:r[9],match:88+((i*7)%11)}));
+const BY=id=>ITEMS.find(x=>x.id===id);
+
+// Rows on the home page (explicit id lists keep the demo tidy)
+const ROWS=[
+ {t:"Trending Now",ids:[1,5,16,3,10,22,7,29,13,25,2,18]},
+ {t:"Popular on ASTRATOONIX",ids:[6,20,9,14,26,31,12,21,30,8,19,28]},
+ {t:"Top 10 in India",ids:[7,3,1,20,24,8,11,17,5,13],top:true},
+ {t:"Continue Watching",ids:[10,14,28,6,25],cw:[72,35,58,12,88]},
+ {t:"Action Movies & Shows",ids:[5,11,16,18,24,29,6,1,32]},
+ {t:"Comedy",ids:[3,8,13,15,20,24,27,17,31]},
+ {t:"Horror",ids:[4,7,12,17,26,31,23]},
+ {t:"New Releases",ids:[1,4,5,8,10,18,22,24,27,30,32,13]}
+];
+const FEATURED=[1,2,5,7,9];
+
+/* ============ GENERATED ARTWORK (inline SVG, no network) ============ */
+const _artCache={};
+function art(it){
+  if(_artCache[it.id])return _artCache[it.id];
+  const h=it.hue,h2=(h+55)%360,m=it.motif;
+  let b=`<defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='hsl(${h} 70% 24%)'/><stop offset='1' stop-color='hsl(${h2} 75% 7%)'/></linearGradient><radialGradient id='r'><stop offset='0' stop-color='hsl(${h} 95% 62%)' stop-opacity='.95'/><stop offset='1' stop-color='hsl(${h} 95% 62%)' stop-opacity='0'/></radialGradient></defs><rect width='160' height='90' fill='url(#g)'/>`;
+  let seed=it.id*9301+49297;const rnd=()=>{seed=(seed*9301+49297)%233280;return seed/233280};
+  if(m===0){ // sun and mountains
+    b+=`<circle cx='80' cy='40' r='34' fill='url(#r)'/><circle cx='80' cy='40' r='11' fill='hsl(${h} 100% 78%)'/>`;
+    b+=`<polygon points='0,90 0,62 28,44 52,66 80,50 112,70 138,48 160,64 160,90' fill='hsl(${h2} 55% 14%)'/>`;
+    b+=`<polygon points='0,90 0,76 36,62 70,78 104,64 160,80 160,90' fill='hsl(${h2} 60% 6%)'/>`;
+  }else if(m===1){ // skyline
+    b+=`<circle cx='80' cy='44' r='38' fill='url(#r)' opacity='.7'/>`;
+    for(let x=0;x<160;x+=10){const hh=18+rnd()*40;b+=`<rect x='${x}' y='${90-hh}' width='9' height='${hh}' fill='hsl(${h2} 45% ${6+rnd()*6}%)'/>`;
+      for(let y=90-hh+4;y<86;y+=7)if(rnd()>.55)b+=`<rect x='${x+2}' y='${y}' width='2' height='2.5' fill='hsl(${h} 95% 70%)' opacity='.85'/>`;}
+  }else if(m===2){ // orbits
+    b+=`<circle cx='80' cy='45' r='30' fill='url(#r)' opacity='.8'/><circle cx='80' cy='45' r='13' fill='hsl(${h} 90% 55%)'/>`;
+    for(let k=0;k<3;k++)b+=`<ellipse cx='80' cy='45' rx='${34+k*16}' ry='${9+k*5}' fill='none' stroke='hsl(${h} 90% 75%)' stroke-width='.6' opacity='${.7-k*.18}' transform='rotate(${-18+k*14} 80 45)'/>`;
+    for(let k=0;k<26;k++)b+=`<circle cx='${rnd()*160}' cy='${rnd()*90}' r='${.3+rnd()*.7}' fill='#fff' opacity='${.3+rnd()*.6}'/>`;
+  }else{ // moon and waves
+    b+=`<circle cx='104' cy='30' r='36' fill='url(#r)' opacity='.8'/><circle cx='104' cy='30' r='12' fill='hsl(${h} 100% 82%)'/>`;
+    b+=`<path d='M0 58 Q20 48 40 58 T80 58 T120 58 T160 58 V90 H0Z' fill='hsl(${h2} 55% 16%)'/><path d='M0 70 Q20 60 40 70 T80 70 T120 70 T160 70 V90 H0Z' fill='hsl(${h2} 60% 9%)'/><path d='M0 82 Q20 74 40 82 T80 82 T120 82 T160 82 V90 H0Z' fill='hsl(${h2} 65% 5%)'/>`;
+  }
+  const svg=`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 90' preserveAspectRatio='xMidYMid slice'>${b}</svg>`;
+  const uri='url(data:image/svg+xml,'+encodeURIComponent(svg).replace(/\(/g,'%28').replace(/\)/g,'%29').replace(/'/g,'%27')+')';
+  return _artCache[it.id]=uri;
+}
+
+/* ============ ICONS ============ */
+const IC={
+ play:'<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>',
+ pause:'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>',
+ plus:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+ check:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+ info:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.8v.1"/></svg>',
+ down:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>',
+ search:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>',
+ left:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+ right:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>',
+ thumb:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11v9H4v-9h3zM7 11l4-8c1.7 0 2.5 1.3 2.2 2.8L12.6 9H19a2 2 0 0 1 2 2.4l-1.4 7A2 2 0 0 1 17.6 20H7"/></svg>',
+ close:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>'
+};
+
+/* ============ HELPERS + STATE ============ */
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store={
+  get(k,d){try{const v=localStorage.getItem('ax_'+k);return v?JSON.parse(v):d}catch(e){return d}},
+  set(k,v){try{localStorage.setItem('ax_'+k,JSON.stringify(v))}catch(e){}}
+};
+const arr=(v,d)=>Array.isArray(v)?v:d;
+const S={list:arr(store.get('list'),[3,8,13]),likes:arr(store.get('likes'),[]),user:store.get('user',null),q:'',prof:0};
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const view=$('#view');
+let cur='home',tToast;
+const inList=id=>S.list.includes(id);
+const go=h=>{location.hash=h};
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tToast);tToast=setTimeout(()=>t.classList.remove('show'),2200)}
+
+/* ============ BUILDERS ============ */
+function cardHTML(it,o={}){
+  const on=inList(it.id);
+  return `<article class="card${o.cw?' cw':''}" data-id="${it.id}" tabindex="0" role="link" aria-label="${esc(it.title)}">
+<div class="art" style="--art:${art(it)}"></div><div class="scrim"></div>
+<h3 class="ctitle">${esc(it.title)}</h3>${o.cw?`<div class="prog"><i style="width:${o.cw}%"></i></div>`:''}
+<div class="hov"><div class="acts">
+<button class="ico play" data-act="play" aria-label="Play">${IC.play}</button>
+<button class="ico${on?' on':''}" data-act="list" aria-label="${on?'Remove from':'Add to'} My List">${on?IC.check:IC.plus}</button>
+<button class="ico" data-act="info" aria-label="More info">${IC.down}</button></div>
+<div class="cmeta"><b class="match">${it.match}% Match</b><span class="pill">${it.rating}</span><span>${it.dur}</span></div>
+<div class="cgen">${it.genres.slice(0,3).join(' · ')}</div></div></article>`;
+}
+function rowHTML(r,pairs){
+  const body=r.top
+    ?pairs.map((p,i)=>`<div class="t10"><span class="num" aria-hidden="true">${i+1}</span>${cardHTML(p.it)}</div>`).join('')
+    :pairs.map(p=>cardHTML(p.it,{cw:p.p})).join('');
+  return `<section class="row"><h2 class="gx">${esc(r.t)}</h2>
+<button class="rbtn l" data-scroll="-1" aria-label="Scroll left">${IC.left}</button>
+<div class="scroller gx">${body}</div>
+<button class="rbtn r" data-scroll="1" aria-label="Scroll right">${IC.right}</button></section>`;
+}
+function rowsFor(f){
+  return ROWS.map(r=>{
+    const pairs=r.ids.map((id,i)=>({it:BY(id),p:r.cw?r.cw[i]:0})).filter(x=>!f||x.it.type===f);
+    return pairs.length>=3?rowHTML(r,pairs):'';
+  }).join('');
+}
+function syncBtns(){
+  $$('[data-act=list]').forEach(b=>{
+    const box=b.closest('[data-id]');const id=+(b.dataset.id||(box&&box.dataset.id));const on=inList(id);
+    b.classList.toggle('on',on);
+    b.innerHTML=b.dataset.lbl?(on?IC.check+' In My List':IC.plus+' My List'):(on?IC.check:IC.plus);
+    b.setAttribute('aria-label',on?'Remove from My List':'Add to My List');
+  });
+  $$('[data-act=like]').forEach(b=>{const on=S.likes.includes(+b.dataset.id);b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});
+}
+
+/* ============ VIEWS ============ */
+const HEROES={home:[1,2,5,7,9],tv:[1,10,14,22,30],movies:[2,5,7,9,16]};
+let heroT,heroI=0,heroList=[];
+function setHero(i){
+  heroI=i;const it=heroList[i];const a=$('#hArt'),c=$('#hCopy');if(!a||!c)return;
+  a.style.setProperty('--art',art(it));
+  c.innerHTML=`<div class="tag"><b></b>${it.type==='s'?'Series':'Film'} · Featured</div>
+<h1 class="h-title">${esc(it.title)}</h1>
+<div class="meta"><span class="match">${it.match}% Match</span><span>${it.year}</span><span class="pill">${it.rating}</span><span>${it.dur}</span><span>${it.genres.join(' · ')}</span></div>
+<p class="h-desc">${esc(it.desc)}</p>
+<div class="cta"><button class="btn light" data-act="play" data-id="${it.id}">${IC.play} Play</button><button class="btn glass" data-act="info" data-id="${it.id}">${IC.info} More Info</button></div>`;
+  [a,c].forEach(el=>{el.style.animation='none';void el.offsetWidth;el.style.animation=''});
+  $$('#dots button').forEach((d,k)=>{d.classList.toggle('on',k===i);d.setAttribute('aria-current',k===i)});
+}
+function startHero(){clearInterval(heroT);if(!reduce)heroT=setInterval(()=>setHero((heroI+1)%heroList.length),7000)}
+function renderBrowse(v){
+  cur=v;const f=v==='tv'?'s':v==='movies'?'m':null;
+  heroList=HEROES[v].map(BY);heroI=0;
+  view.className='view';
+  view.innerHTML=`<section class="hero" id="hero" aria-label="Featured titles"><div class="art" id="hArt"></div>
+<div class="hero-in gx"><div class="hero-copy" id="hCopy"></div>
+<div class="dots" id="dots">${heroList.map((_,k)=>`<button data-hero="${k}" aria-label="Show featured title ${k+1}"></button>`).join('')}</div></div></section>
+<div class="rows">${rowsFor(f)}</div>`;
+  setHero(0);startHero();
+  const h=$('#hero');
+  h.addEventListener('pointerenter',()=>clearInterval(heroT));
+  h.addEventListener('pointerleave',startHero);
+}
+function renderTitle(id){
+  const it=BY(id);if(!it){go('home');return}
+  cur='title';view.className='view';
+  const sim=ITEMS.filter(x=>x.id!==id)
+    .map(x=>({x,s:x.genres.filter(g=>it.genres.includes(g)).length+(x.type===it.type?.5:0)}))
+    .filter(o=>o.s>0).sort((a,b)=>b.s-a.s||a.x.id-b.x.id).slice(0,12).map(o=>({it:o.x,p:0}));
+  view.innerHTML=`<section class="d-hero" data-id="${it.id}"><div class="art" style="--art:${art(it)}"></div>
+<div class="hero-in gx"><div class="hero-copy">
+<div class="tag"><b></b>${it.type==='s'?'Series':'Film'}</div>
+<h1 class="h-title">${esc(it.title)}</h1>
+<div class="meta"><span class="match">${it.match}% Match</span><span>${it.year}</span><span class="pill">${it.rating}</span><span>${it.dur}</span><span class="pill">HD</span></div>
+<div class="cta" style="margin-top:20px">
+<button class="btn light" data-act="play">${IC.play} Play</button>
+<button class="btn glass" data-act="list" data-lbl="1"></button>
+<button class="ico lg" data-act="like" data-id="${it.id}" aria-label="Like">${IC.thumb}</button></div>
+</div></div></section>
+<div class="d-body gx"><div><p>${esc(it.desc)}</p><p class="kv"><b>Genres:</b> ${it.genres.join(', ')}</p></div>
+<div><p class="kv"><b>Cast:</b> ${it.cast.map(esc).join(', ')}</p><p class="kv"><b>Format:</b> ${it.type==='s'?'TV series':'Feature film'}, ${esc(it.dur)}</p><p class="kv"><b>Rated:</b> ${it.rating}</p></div></div>
+<div class="rows" style="margin-top:0">${rowHTML({t:'More Like This'},sim)}</div>`;
+}
+function renderMyList(){
+  cur='mylist';view.className='view pad';
+  const items=S.list.map(BY).filter(Boolean);
+  view.innerHTML=`<div class="gx"><h1 class="page-h">My List</h1>${items.length
+    ?`<p class="sub">${items.length} saved ${items.length===1?'title':'titles'}. Titles you add anywhere on ASTRATOONIX appear here.</p><div class="grid">${items.map(i=>cardHTML(i)).join('')}</div>`
+    :`<div class="empty"><h3>Nothing here yet</h3><p>Tap the plus on any title to save it for later.</p><a class="btn red" href="#home">Browse titles</a></div>`}</div>`;
+}
+function renderSearch(){
+  cur='search';view.className='view pad';
+  const genres=[...new Set(ITEMS.flatMap(i=>i.genres))].sort();
+  view.innerHTML=`<div class="gx"><h1 class="page-h">Search</h1>
+<label class="searchbox" for="q">${IC.search}<input id="q" type="search" placeholder="Titles, genres, cast" autocomplete="off" value="${esc(S.q)}"></label>
+<div class="chips" role="group" aria-label="Browse by genre">${genres.map(g=>`<button class="chip" data-chip="${esc(g)}">${esc(g)}</button>`).join('')}</div>
+<div id="results"></div></div>`;
+  const q=$('#q');
+  q.addEventListener('input',()=>{S.q=q.value;results()});
+  results();
+  try{q.focus({preventScroll:true})}catch(e){}
+}
+function results(){
+  const q=S.q.trim().toLowerCase(),box=$('#results');if(!box)return;
+  if(!q){box.innerHTML=`<h2 style="font:600 1.1rem var(--body);margin:0 0 14px">Popular searches</h2><div class="grid">${ROWS[0].ids.map(BY).map(i=>cardHTML(i)).join('')}</div>`;return}
+  const hits=ITEMS.filter(i=>[i.title,i.type==='s'?'series tv show':'movie film',i.genres.join(' '),i.cast.join(' '),String(i.year)].join(' ').toLowerCase().includes(q));
+  box.innerHTML=hits.length
+    ?`<p class="sub">${hits.length} ${hits.length===1?'result':'results'} for "${esc(S.q.trim())}"</p><div class="grid">${hits.map(i=>cardHTML(i)).join('')}</div>`
+    :`<div class="empty"><h3>No matches</h3><p>Nothing for "${esc(S.q.trim())}". Try a genre like Action or a title word.</p></div>`;
+}
+function renderLogin(){
+  cur='login';view.className='view';let mode='in';
+  view.innerHTML=`<section class="auth gx"><div class="art" style="--art:${art(BY(1))}"></div>
+<form class="auth-card" id="af" novalidate><h1 id="at">Sign In</h1>
+<div class="tabs" role="tablist"><button type="button" class="on" data-m="in" role="tab" aria-selected="true">Sign In</button><button type="button" data-m="up" role="tab" aria-selected="false">Sign Up</button></div>
+<div class="field" id="nameF" hidden><label for="nm">Name</label><input id="nm" autocomplete="name" placeholder="Your name"></div>
+<div class="field"><label for="em">Email</label><input id="em" type="email" autocomplete="email" placeholder="you@example.com"></div>
+<div class="field"><label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password" placeholder="At least 6 characters"></div>
+<p class="err" id="er" role="alert"></p>
+<button class="btn red block" id="sb" type="submit">Sign In</button>
+<p class="fine">Demo form: nothing is sent to a server.</p></form></section>`;
+  const af=$('#af');
+  $$('.tabs button',af).forEach(b=>b.addEventListener('click',()=>{
+    mode=b.dataset.m;
+    $$('.tabs button',af).forEach(x=>{const on=x===b;x.classList.toggle('on',on);x.setAttribute('aria-selected',on)});
+    $('#at').textContent=$('#sb').textContent=mode==='in'?'Sign In':'Create Account';
+    $('#nameF').hidden=mode==='in';$('#er').textContent='';
+  }));
+  af.addEventListener('submit',e=>{
+    e.preventDefault();
+    const nm=$('#nm').value.trim(),em=$('#em').value.trim(),pw=$('#pw').value,er=$('#er');
+    if(mode==='up'&&!nm){er.textContent='Enter your name.';$('#nm').focus();return}
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){er.textContent='Enter a valid email address.';$('#em').focus();return}
+    if(pw.length<6){er.textContent='Use a password with at least 6 characters.';$('#pw').focus();return}
+    const name=(mode==='up'?nm:em.split('@')[0]).replace(/^./,c=>c.toUpperCase());
+    S.user={name,email:em};store.set('user',S.user);renderProfile();
+    toast(`Welcome to ASTRATOONIX, ${name}`);go('home');
+  });
+}
+
+/* ============ PROFILE MENU ============ */
+function profiles(){const n=S.user?S.user.name:'Guest';return[{n,c:''},{n:'Kids',c:'b'},{n:'Family',c:'c'}]}
+function renderProfile(){
+  const P=profiles(),p=P[S.prof]||P[0];
+  const av=$('#avatar');av.textContent=p.n[0].toUpperCase();av.className='avatar '+p.c;
+  $('#menu').innerHTML=`<div class="who">${S.user?esc(S.user.email):'Browsing as guest'}</div>
+${P.map((q,i)=>`<button class="mi" data-prof="${i}"><span class="avatar ${q.c}">${esc(q.n[0].toUpperCase())}</span>${esc(q.n)}${i===S.prof?' (active)':''}</button>`).join('')}
+<hr><a href="#mylist">My List</a><a href="#search">Search</a><button class="mi" data-account="1">Account</button><hr>
+${S.user?'<button class="mi" data-out="1">Sign out</button>':'<a href="#login">Sign in</a>'}`;
+}
+function closeMenu(){$('#menu').hidden=true;$('#profBtn').setAttribute('aria-expanded','false')}
+$('#profBtn').addEventListener('click',e=>{
+  e.stopPropagation();const m=$('#menu');m.hidden=!m.hidden;$('#profBtn').setAttribute('aria-expanded',String(!m.hidden));
+});
+
+/* ============ PLAYER (demo) ============ */
+let pT,pEl=0,pOn=false,pFrom=null;
+const fmt=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
+function setPlaying(on){
+  pOn=on;$('#pPlay').innerHTML=on?IC.pause:IC.play;clearInterval(pT);
+  if(on)pT=setInterval(()=>{
+    pEl+=.25;const f=Math.min(pEl/40,1);
+    $('#pFill').style.width=f*100+'%';$('#pTime').textContent=fmt(pEl)+' / 0:40 demo clip';
+    if(f>=1)setPlaying(false);
+  },250);
+}
+function openPlayer(id){
+  const it=BY(id);pFrom=document.activeElement;
+  $('#pTitle').textContent=it.title;$('#pBig').textContent=it.title;$('#pArt').style.setProperty('--art',art(it));
+  pEl=0;$('#pFill').style.width='0';$('#player').hidden=false;document.documentElement.style.overflow='hidden';
+  setPlaying(true);$('#pClose').focus();
+}
+function closePlayer(){
+  setPlaying(false);$('#player').hidden=true;document.documentElement.style.overflow='';
+  if(pFrom&&pFrom.focus)try{pFrom.focus({preventScroll:true})}catch(e){}
+}
+$('#pClose').addEventListener('click',closePlayer);
+$('#pPlay').addEventListener('click',()=>{if(!pOn&&pEl>=40)pEl=0;setPlaying(!pOn)});
+$('#pStage').addEventListener('click',()=>setPlaying(!pOn));
+
+/* ============ EVENTS ============ */
+let dragEl=null,dsx=0,dsl=0,dragMoved=false;
+document.addEventListener('pointerdown',e=>{
+  if(e.pointerType!=='mouse'||e.button!==0)return;
+  const s=e.target.closest('.scroller');if(!s)return;
+  dragEl=s;dsx=e.clientX;dsl=s.scrollLeft;dragMoved=false;
+});
+window.addEventListener('pointermove',e=>{
+  if(!dragEl)return;const dx=e.clientX-dsx;
+  if(Math.abs(dx)>5){dragMoved=true;dragEl.classList.add('drag')}
+  if(dragMoved)dragEl.scrollLeft=dsl-dx;
+});
+window.addEventListener('pointerup',()=>{if(dragEl){dragEl.classList.remove('drag');dragEl=null;setTimeout(()=>{dragMoved=false},0)}});
+// a drag must never count as a click on a card
+document.addEventListener('click',e=>{if(dragMoved){dragMoved=false;e.preventDefault();e.stopPropagation()}},true);
+
+function doAct(b){
+  const box=b.closest('[data-id]');const id=+(b.dataset.id||(box&&box.dataset.id));
+  const a=b.dataset.act;
+  if(a==='play')openPlayer(id);
+  else if(a==='info')go('title-'+id);
+  else if(a==='list'){
+    const on=!inList(id);S.list=on?[...S.list,id]:S.list.filter(x=>x!==id);store.set('list',S.list);
+    toast(on?'Added to My List':'Removed from My List');
+    if(cur==='mylist')renderMyList();
+    syncBtns();
+  }else if(a==='like'){
+    const on=!S.likes.includes(id);S.likes=on?[...S.likes,id]:S.likes.filter(x=>x!==id);store.set('likes',S.likes);
+    toast(on?'Thanks. We will show you more like this.':'Rating removed');syncBtns();
+  }
+}
+document.addEventListener('click',e=>{
+  const t=e.target;
+  if(!t.closest('#prof'))closeMenu();
+  const sb=t.closest('[data-scroll]');
+  if(sb){const sc=sb.parentElement.querySelector('.scroller');sc.scrollBy({left:+sb.dataset.scroll*sc.clientWidth*.85,behavior:reduce?'auto':'smooth'});return}
+  const hb=t.closest('[data-hero]');if(hb){setHero(+hb.dataset.hero);startHero();return}
+  const ch=t.closest('[data-chip]');
+  if(ch){S.q=ch.dataset.chip;const q=$('#q');if(q)q.value=S.q;results();return}
+  const pf=t.closest('[data-prof]');
+  if(pf){S.prof=+pf.dataset.prof;renderProfile();closeMenu();toast('Switched to '+profiles()[S.prof].n);return}
+  if(t.closest('[data-account]')){closeMenu();toast('Account settings are not part of this demo');return}
+  if(t.closest('[data-out]')){S.user=null;S.prof=0;store.set('user',null);renderProfile();closeMenu();toast('Signed out');if(cur==='login')go('home');return}
+  const act=t.closest('[data-act]');if(act){e.preventDefault();doAct(act);return}
+  const card=t.closest('.card');if(card)go('title-'+card.dataset.id);
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){if(!$('#player').hidden)closePlayer();else closeMenu()}
+  if(e.key==='Enter'&&e.target.classList&&e.target.classList.contains('card'))go('title-'+e.target.dataset.id);
+});
+window.addEventListener('scroll',setNav,{passive:true});
+function setNav(){$('#nav').classList.toggle('solid',scrollY>20||cur==='mylist'||cur==='search')}
+
+/* ============ ROUTER ============ */
+function route(){
+  closeMenu();clearInterval(heroT);
+  const h=(location.hash||'#home').slice(1);let m;
+  if(!$('#player').hidden)closePlayer();
+  if(h==='tv'||h==='movies'||h==='home')renderBrowse(h);
+  else if(h==='mylist')renderMyList();
+  else if(h==='search')renderSearch();
+  else if(h==='login')renderLogin();
+  else if((m=h.match(/^title-(\d+)$/)))renderTitle(+m[1]);
+  else renderBrowse('home');
+  $$('#links a,#navSearch').forEach(a=>a.classList.toggle('on',a.dataset.v===cur));
+  syncBtns();setNav();scrollTo(0,0);
+}
+window.addEventListener('hashchange',route);
+
+/* ============ INIT ============ */
+$('#navSearch').innerHTML=IC.search;
+$('#pClose').innerHTML=IC.close;
+renderProfile();
+route();
+</script>
