@@ -1,0 +1,25 @@
+[
+  {
+    "id": 1,
+    "title": "Film ka naam",
+    "year": 1985,
+    "rating": "U/A 13+",
+    "dur": "1h 30m",
+    "genres": ["Sci-Fi", "Adventure"],
+    "desc": "Chhota sa description.",
+    "cast": ["Actor 1", "Actor 2"],
+    "tg": 123,
+    "license": "Public Domain (US, no copyright notice)",
+    "source": "https://archive.org/details/EXAMPLE-ID"
+  },
+  {
+    "id": 2,
+    "title": "Doosri film (archive.org se seedha)",
+    "year": 1987,
+    "genres": ["Drama"],
+    "desc": "tg ki jagah url bhi de sakte ho.",
+    "url": "https://archive.org/download/EXAMPLE-ID/film.mp4",
+    "license": "CC BY 4.0",
+    "source": "https://archive.org/details/EXAMPLE-ID"
+  }
+]
