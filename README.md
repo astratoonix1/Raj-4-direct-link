@@ -1,6 +1,6 @@
 # AstraToonix NX 🎬
 
-Telegram se chalne wala, Netflix jaisa streaming site.
+Telegram se chalne wala,  streaming site.
 Bot ko video bhejo → bot file ke naam se **TMDB** par title dhoondhta hai → sahi category mein daal deta hai → site par poster, rating, cast, episodes aur parts ke saath dikhta hai.
 
 > Sirf apni / public-domain / licensed content ke liye use karo.
