@@ -71,6 +71,7 @@ Sab files repo ke **root** mein rakho (koi subfolder nahi):
 | `OWNER_ABOUT` | optional | Owner page ka "about me" text |
 | `OWNER_PHOTO_URL` | optional | Owner ki photo ka seedha link |
 | `OWNER_TELEGRAM` | optional | Telegram username (bina @), "Telegram par milo" button ke liye |
+| `PREMIUM` | optional | `on` daalo toh premium system pehli baar se chalu. Khaali = **band** (sab free). Baad mein bot se `/premiumon` / `/premiumoff` se turant badal sakte ho, redeploy nahi chahiye |
 | `PREMIUM_FROM_YEAR` | optional | jaise `2015`: is saal aur uske baad ke saare titles **Premium** (naam ke saal se). Khaali = saal ka rule band |
 | `PLAN_PRICE` | optional | 1 mahine ka rate, default `99`. Plans: 1, 2, 3, 6, 12 mahine (mahine x rate) |
 | `PLANS` | optional | apne plan/discount: `1=99,2=180,6=500,12=900` (mahine=daam) |
@@ -136,6 +137,7 @@ OTP email kabhi **Spam** mein jaa sakta hai, user ko site par yahi likha dikhta 
 | `/codes`, `/subs` | unused codes, premium users |
 | `/grant <email ya id> <mahine>`, `/revoke <email ya id>` | seedha premium do / hatao |
 | `/payments` | pending payments, ✅ Approve / ❌ Reject buttons ke saath |
+| `/premiumon`, `/premiumoff` | poora premium system chalu / band, turant. Band hone par sab free, Premium button site se hat jata hai, users/payments/codes safe rehte hain |
 | `/premium <file id> on\|off\|auto` | ek title ko hamesha premium / hamesha free / saal ke rule par. `/premiumlist` se dekho |
 | `/testmail <email>` | Gmail se mail jaa rahi hai ya nahi, test karo (galti hui toh wajah bhi batata hai) |
 | `/users` | saare users, har ek ke saath 🚫 Block / ✅ Unblock / 🗑 Delete |
