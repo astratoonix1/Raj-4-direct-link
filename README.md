@@ -1,6 +1,6 @@
 # AstraToonix NX 🎬
 
-Telegram se chalne wala,  streaming site.
+Telegram se chalne wala, Netflix jaisa streaming site.
 Bot ko video bhejo → bot file ke naam se **TMDB** par title dhoondhta hai → sahi category mein daal deta hai → site par poster, rating, cast, episodes aur parts ke saath dikhta hai.
 
 > Sirf apni / public-domain / licensed content ke liye use karo.
@@ -15,7 +15,13 @@ Bot ko video bhejo → bot file ke naam se **TMDB** par title dhoondhta hai → 
 - **Parts:** movie ka Part 2, Part 3 TMDB collection se dikhta hai (jo upload nahi hua wo dhundhla).
 - **Kai quality = ek card:** 480p/720p/1080p ek hi title mein judti hain.
 - **Bot se poora control:** ek saath aayi files ka ek hi message, 🗑 delete buttons, `/list`, `/others`, `/fix`, `/cat`, `/thumb` aur bhi.
-- **Koi password nahi:** link kholne wala seedha dekh sakta hai. Upload sirf admin kar sakta hai.
+- **Dekhne ke liye login zaroori nahi:** link kholne wala seedha dekh sakta hai. Upload sirf admin kar sakta hai.
+- **⋮ menu:** 🎬 Movie/Series Request, 👤 Owner/About + message, 🔔 Updates.
+- **Request:** naam likhte hi TMDB suggestions, site par pehle se ho toh bata deta hai. Tumhe Telegram par ✅ / ⏳ / ❌ buttons ke saath aati hai, status user ko site par dikhta hai.
+- **Owner se baat:** user message bhejta hai → tumhe Telegram par aata hai → bot message ko **Reply** karo → jawab site par dikhta hai.
+- **Broadcast:** `/broadcast text` → sabko 🔔 mein dikhta hai.
+- **Account (Gmail + password + OTP):** ek Gmail = ek account. My List, Likes, Continue Watching har device par saath. Galat OTP se account block nahi hota (5 galat → naya OTP maango). Forgot password aur email badalna (naye email par OTP) bhi hai.
+- **Admin control:** `/users` se block / unblock / delete.
 
 ---
 
@@ -32,6 +38,10 @@ Sab files repo ke **root** mein rakho (koi subfolder nahi):
 ├── pipeline.go       upload hote hi: match → category → jodna
 ├── batch.go          ek saath aayi files ka ek message
 ├── api.go            site ke data endpoints
+├── api2.go           login, OTP, request, message, updates endpoints
+├── hub.go            users, OTP, sessions, requests, messages
+├── mailer.go         Gmail se OTP email bhejna
+├── adminhub.go       bot: /users, /broadcast, request buttons, reply
 ├── store_mongo.go    MongoDB mein save karna
 ├── index.html        home, detail, search, My List, login
 ├── watch.html        player page
@@ -54,12 +64,29 @@ Sab files repo ke **root** mein rakho (koi subfolder nahi):
 | `FQDN` | ✅ | `myapp.koyeb.app` (https:// ke bina) |
 | `DB_URI` | ✅ | MongoDB ka link (Atlas free chalega) |
 | `TMDB_API_KEY` | ⭐ | themoviedb.org → Settings → API (v3 key ya v4 token). Na ho toh sab **Other** mein jaayega |
+| `GMAIL_USER` | 🔐 login ke liye | tumhara Gmail, jaise `rajdev9101@gmail.com` |
+| `GMAIL_APP_PASSWORD` | 🔐 login ke liye | Google **App Password** (16 akshar), asli Gmail password nahi. Neeche steps dekho |
+| `OWNER_NAME` | optional | Owner page par naam (default `Raj Dev`) |
+| `OWNER_ABOUT` | optional | Owner page ka "about me" text |
+| `OWNER_PHOTO_URL` | optional | Owner ki photo ka seedha link |
+| `OWNER_TELEGRAM` | optional | Telegram username (bina @), "Telegram par milo" button ke liye |
+| `ALLOWED_EMAIL_DOMAINS` | optional | default `gmail.com,googlemail.com`. Sab allow karna ho toh `*` |
 | `DB_NAME` | optional | default `astratoonix_nx` |
 | `SITE_NAME` | optional | default `AstraToonix` |
 | `LOGO_URL` | optional | logo ki image ka seedha link (navbar + player) |
 | `DEFAULT_THUMB_URL` | optional | jin titles ka poster nahi hai unke liye default image |
 | `PORT` | optional | default `8080` |
 | `STREAM_CONCURRENCY`, `STREAM_BUFFER_COUNT` | optional | streaming speed tuning (default 4 aur 8) |
+
+### 🔐 Gmail App Password kaise banaye
+Asli Gmail password SMTP par kaam nahi karta, Google App Password maangta hai.
+1. Google Account → **Security** → **2-Step Verification** ON karo.
+2. Wahin search karo **App passwords** → naam likho (jaise `NX`) → **Create**.
+3. 16 akshar ka password milega (`abcd efgh ijkl mnop`). Spaces ke saath ya bina, dono chalenge.
+4. Koyeb mein `GMAIL_USER` aur `GMAIL_APP_PASSWORD` daalo, redeploy.
+5. Env na daalo toh site normal chalegi, bas login/OTP band rahega.
+
+OTP email kabhi **Spam** mein jaa sakta hai, user ko site par yahi likha dikhta hai. Gmail ki limit lagbhag 500 email/din hai.
 
 ---
 
@@ -96,6 +123,14 @@ Sab files repo ke **root** mein rakho (koi subfolder nahi):
 | `/stats` | kitne titles/files, category ke hisaab se |
 | `/tmdb` | TMDB connection test (The Matrix ki rating dikhata hai) |
 | `/id` | apna Telegram ID |
+| `/users` | saare users, har ek ke saath 🚫 Block / ✅ Unblock / 🗑 Delete |
+| `/user <email ya id>` | ek user ki detail |
+| `/block`, `/unblock`, `/deluser <email ya id>` | seedha email se |
+| `/setemail <email ya id> <naya email>` | user ne galat email se account banaya aur purane tak pahunch nahi, tab |
+| `/requests` | pending movie/series requests (✅ ⏳ ❌ buttons) |
+| `/broadcast <text>` | site par update, 🔔 mein dikhta hai |
+| `/updates` | purane updates, 🗑 se hatao |
+| *(user ke message ko Reply)* | jawab site par user ko dikhta hai |
 
 `<id>` = bot ke message mein likha 🆔 number.
 
@@ -134,9 +169,10 @@ video123.mp4                             ❌ Other mein jaayega
 
 ## 🗄️ Data kahan rehta hai
 
-- **MongoDB:** sirf do collections: `nx_titles` aur `nx_files`. Doosre collections ya doosre bot ke data ko ye nahi chhoota.
+- **MongoDB:** sirf teen collections: `nx_titles`, `nx_files` aur `nx_docs` (users, requests, messages). Doosre collections ya doosre bot ke data ko ye nahi chhoota.
 - **Telegram:** video storage channel mein rehti hai. `/del`, `/deltitle`, `/deleteall` aur 🗑 wahan se bhi wo message hatate hain jo NX ne khud forward kiya tha.
-- **Browser (sirf us device par):** My List, Likes, Continue Watching, resume position, profile naam.
+- **Browser:** My List, Likes, Continue Watching, resume position. Login ho toh My List/Likes/Continue Watching account mein bhi save hote hain.
+- **Password:** kabhi seedha save nahi hota (PBKDF2 hash).
 
 Auto filter jaise kisi doosre bot ke saath ho toh NX ke liye **alag storage channel** rakho.
 
@@ -153,6 +189,8 @@ Auto filter jaise kisi doosre bot ke saath ho toh NX ke liye **alag storage chan
 | Link khulne par "File nahi mili" | Wo file storage channel se hat chuki hai, dobara upload karo |
 | Build mein `missing go.sum entry` | Koyeb mein Builder **Dockerfile** karo |
 | `Conflict: terminated by other getUpdates` | Bot ki doosri copy band karo ya token revoke karke naya daalo |
+| Login/OTP nahi chal raha | `GMAIL_USER` aur `GMAIL_APP_PASSWORD` (App Password) check karo. Logs mein `otp mail ... failed` aur wajah dikhegi |
+| OTP email nahi aaya | Spam/Promotions dekho, 45 second baad "Naya OTP bhejo" |
 | Home par kuch nahi dikhta | Pehli file upload karo; MongoDB `DB_URI` sahi hai ya nahi dekho |
 
 ---

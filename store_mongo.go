@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -15,6 +16,7 @@ import (
 type MongoStore struct {
 	titles *mongo.Collection
 	files  *mongo.Collection
+	docs   *mongo.Collection
 }
 
 func NewMongoStore(ctx context.Context, uri, dbName string) (*MongoStore, error) {
@@ -28,7 +30,7 @@ func NewMongoStore(ctx context.Context, uri, dbName string) (*MongoStore, error)
 		return nil, fmt.Errorf("mongo ping: %w", err)
 	}
 	db := client.Database(dbName)
-	return &MongoStore{titles: db.Collection("nx_titles"), files: db.Collection("nx_files")}, nil
+	return &MongoStore{titles: db.Collection("nx_titles"), files: db.Collection("nx_files"), docs: db.Collection("nx_docs")}, nil
 }
 
 // LoadAll: koi sort nahi (free MongoDB mein bade sort fail ho jaate hain) — sorting Go mein hoti hai.
@@ -75,4 +77,43 @@ func (m *MongoStore) DeleteTitle(ctx context.Context, key string) error {
 func (m *MongoStore) AddViews(ctx context.Context, key string, n int) error {
 	_, err := m.titles.UpdateOne(ctx, bson.M{"_id": key}, bson.M{"$inc": bson.M{"views": n}})
 	return err
+}
+
+// ---------- Docs: users / sessions / requests / messages (nx_docs) ----------
+
+type MongoDocs struct{ c *mongo.Collection }
+
+func (m *MongoStore) Docs() Docs { return &MongoDocs{c: m.docs} }
+
+type docRow struct {
+	ID   string `bson:"_id"`
+	Coll string `bson:"c"`
+	Data string `bson:"d"`
+}
+
+func (m *MongoDocs) Put(ctx context.Context, coll, id string, data []byte) error {
+	k := coll + "/" + id
+	_, err := m.c.ReplaceOne(ctx, bson.M{"_id": k}, docRow{ID: k, Coll: coll, Data: string(data)}, options.Replace().SetUpsert(true))
+	return err
+}
+
+func (m *MongoDocs) Delete(ctx context.Context, coll, id string) error {
+	_, err := m.c.DeleteOne(ctx, bson.M{"_id": coll + "/" + id})
+	return err
+}
+
+func (m *MongoDocs) All(ctx context.Context, coll string) (map[string][]byte, error) {
+	cur, err := m.c.Find(ctx, bson.M{"c": coll})
+	if err != nil {
+		return nil, err
+	}
+	var rows []docRow
+	if err := cur.All(ctx, &rows); err != nil {
+		return nil, err
+	}
+	out := make(map[string][]byte, len(rows))
+	for _, r := range rows {
+		out[strings.TrimPrefix(r.ID, coll+"/")] = []byte(r.Data)
+	}
+	return out, nil
 }
