@@ -70,6 +70,7 @@ Sab files repo ke **root** mein rakho (koi subfolder nahi):
 | `OWNER_ABOUT` | optional | Owner page ka "about me" text |
 | `OWNER_PHOTO_URL` | optional | Owner ki photo ka seedha link |
 | `OWNER_TELEGRAM` | optional | Telegram username (bina @), "Telegram par milo" button ke liye |
+| `DEFAULT_QUALITY` | optional | `low` (default): Play dabane par sabse kam quality (480p) chalti hai, user chahe toh player mein badal sakta hai. `high` = sabse achhi quality pehle |
 | `REQUIRE_LOGIN` | optional | `1` daalo toh **kisi bhi link par pehle Sign In / Sign Up** aayega, login ke baad wahi link khulega. Band karne ke liye env hata do. `GMAIL_*` set na ho toh ye apne aap off rehta hai |
 | `ALLOWED_EMAIL_DOMAINS` | optional | default `gmail.com,googlemail.com`. Sab allow karna ho toh `*` |
 | `DB_NAME` | optional | default `astratoonix_nx` |
@@ -131,6 +132,7 @@ OTP email kabhi **Spam** mein jaa sakta hai, user ko site par yahi likha dikhta 
 | `/setemail <email ya id> <naya email>` | user ne galat email se account banaya aur purane tak pahunch nahi, tab |
 | `/requests` | pending movie/series requests (✅ ⏳ ❌ buttons) |
 | `/broadcast <text>` | site par update, 🔔 mein dikhta hai |
+| `/clearbell` | 🔔 ke saare messages ek saath hatao (confirm ke baad). Users, requests aur movies nahi chhute |
 | `/updates` | purane updates, 🗑 se hatao |
 | *(user ke message ko Reply)* | jawab site par user ko dikhta hai |
 
