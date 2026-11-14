@@ -64,7 +64,7 @@ Sab files repo ke **root** mein rakho (koi subfolder nahi):
 | `FQDN` | ✅ | `myapp.koyeb.app` (https:// ke bina) |
 | `DB_URI` | ✅ | MongoDB ka link (Atlas free chalega) |
 | `TMDB_API_KEY` | ⭐ | themoviedb.org → Settings → API (v3 key ya v4 token). Na ho toh sab **Other** mein jaayega |
-| `GMAIL_USER` | 🔐 login ke liye | tumhara Gmail, jaise `rajdev9101@gmail.com` |
+| `GMAIL_USER` | 🔐 login ke liye | tumhara Gmail, jaise `rajdev@gmail.com` |
 | `GMAIL_APP_PASSWORD` | 🔐 login ke liye | Google **App Password** (16 akshar), asli Gmail password nahi. Neeche steps dekho |
 | `OWNER_NAME` | optional | Owner page par naam (default `Raj Dev`) |
 | `OWNER_ABOUT` | optional | Owner page ka "about me" text |
