@@ -48,7 +48,9 @@ type TitleDoc struct {
 	Parts          []Part    `bson:"parts,omitempty" json:"-"`
 	Aliases        []string  `bson:"aliases,omitempty" json:"-"`
 	Views          int       `bson:"views" json:"-"`
-	Locked         bool      `bson:"locked,omitempty" json:"-"` // admin ne khud set kiya (/fix, /cat)
+	Locked         bool      `bson:"locked,omitempty" json:"-"`  // admin ne khud set kiya (/fix, /cat)
+	Access         string    `bson:"access,omitempty" json:"-"`  // "" = auto (saal ka rule) | "premium" | "free"
+	Premium        bool      `bson:"-" json:"premium,omitempty"` // sirf dikhane ke liye (calculate hota hai)
 	Created        time.Time `bson:"created" json:"-"`
 	Updated        time.Time `bson:"updated" json:"-"`
 }
@@ -76,12 +78,13 @@ type Store interface {
 }
 
 type Catalog struct {
-	mu      sync.RWMutex
-	store   Store
-	titles  map[string]*TitleDoc
-	files   map[int]*FileDoc
-	byTitle map[string][]int  // title key -> file ids
-	aliases map[string]string // alias -> title key
+	mu       sync.RWMutex
+	store    Store
+	titles   map[string]*TitleDoc
+	files    map[int]*FileDoc
+	byTitle  map[string][]int  // title key -> file ids
+	aliases  map[string]string // alias -> title key
+	premFrom int               // is saal se premium (0 = off)
 }
 
 func NewCatalog(ctx context.Context, store Store) (*Catalog, error) {
@@ -349,11 +352,12 @@ type Card struct {
 	Genres   []string `json:"genres,omitempty"`
 	Overview string   `json:"overview,omitempty"`
 	Files    int      `json:"files"`
+	Premium  bool     `json:"premium,omitempty"`
 }
 
 func (c *Catalog) card(t *TitleDoc, withOverview bool) Card {
 	cd := Card{Key: t.Key, Title: t.Title, Year: t.Year, Rating: t.Rating, Poster: t.Poster,
-		Backdrop: t.Backdrop, Category: t.Category, Kind: t.Kind, Genres: t.Genres, Files: len(c.byTitle[t.Key])}
+		Backdrop: t.Backdrop, Category: t.Category, Kind: t.Kind, Genres: t.Genres, Files: len(c.byTitle[t.Key]), Premium: c.premium(t)}
 	if withOverview {
 		o := t.Overview
 		if r := []rune(o); len(r) > 260 {
@@ -766,6 +770,7 @@ func (c *Catalog) TitleView(key string) *TitleView {
 		return nil
 	}
 	cp := *t
+	cp.Premium = c.premium(t)
 	return &TitleView{Title: &cp, Entries: c.entries(t), Parts: c.partsView(t), Similar: c.similar(t, 14), Views: t.Views}
 }
 
@@ -958,4 +963,74 @@ func (c *Catalog) SetImage(ctx context.Context, key, url string) bool {
 	c.mu.Unlock()
 	_ = c.store.SaveTitle(ctx, &cp)
 	return true
+}
+
+// ---------- premium ----------
+
+// SetPremiumFrom: is saal (aur uske baad) ke saare titles premium (0 = saal ka rule band).
+func (c *Catalog) SetPremiumFrom(y int) {
+	c.mu.Lock()
+	c.premFrom = y
+	c.mu.Unlock()
+}
+
+func (c *Catalog) PremiumFrom() int {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.premFrom
+}
+
+// premium: caller RLock/Lock pakde ho.
+func (c *Catalog) premium(t *TitleDoc) bool {
+	switch t.Access {
+	case "premium":
+		return true
+	case "free":
+		return false
+	}
+	return c.premFrom > 0 && t.Year >= c.premFrom
+}
+
+// IsPremiumFile: (premium hai?, file mili?)
+func (c *Catalog) IsPremiumFile(id int) (bool, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	f := c.files[id]
+	if f == nil {
+		return false, false
+	}
+	t := c.titles[f.TitleKey]
+	if t == nil {
+		return false, true
+	}
+	return c.premium(t), true
+}
+
+// SetAccess: access = "premium" | "free" | "" (auto). Title ka naam wapas deta hai.
+func (c *Catalog) SetAccess(ctx context.Context, fileID int, access string) (string, bool) {
+	c.mu.Lock()
+	f := c.files[fileID]
+	if f == nil || c.titles[f.TitleKey] == nil {
+		c.mu.Unlock()
+		return "", false
+	}
+	t := c.titles[f.TitleKey]
+	t.Access, t.Updated = access, time.Now()
+	cp := *t
+	c.mu.Unlock()
+	_ = c.store.SaveTitle(ctx, &cp)
+	return cp.Title, true
+}
+
+func (c *Catalog) PremiumTitles() []string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	var out []string
+	for _, t := range c.titles {
+		if len(c.byTitle[t.Key]) > 0 && c.premium(t) {
+			out = append(out, t.Title)
+		}
+	}
+	sort.Strings(out)
+	return out
 }

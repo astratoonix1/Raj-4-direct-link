@@ -21,6 +21,7 @@ Bot ko video bhejo → bot file ke naam se **TMDB** par title dhoondhta hai → 
 - **Owner se baat:** user message bhejta hai → tumhe Telegram par aata hai → bot message ko **Reply** karo → jawab site par dikhta hai.
 - **Broadcast:** `/broadcast text` → sabko 🔔 mein dikhta hai.
 - **Account (Gmail + password + OTP):** ek Gmail = ek account. My List, Likes, Continue Watching har device par saath. Galat OTP se account block nahi hota (5 galat → naya OTP maango). Forgot password aur email badalna (naye email par OTP) bhi hai.
+- **Premium (👑):** `PREMIUM_FROM_YEAR` ke baad ke titles lock. Plan chuno → QR se pay → UTR daalo → tumhe Telegram par Approve/Reject → user ka premium chalu. Redeem code bhi chalta hai. Premium click karte hi animation.
 - **Admin control:** `/users` se block / unblock / delete.
 
 ---
@@ -70,6 +71,12 @@ Sab files repo ke **root** mein rakho (koi subfolder nahi):
 | `OWNER_ABOUT` | optional | Owner page ka "about me" text |
 | `OWNER_PHOTO_URL` | optional | Owner ki photo ka seedha link |
 | `OWNER_TELEGRAM` | optional | Telegram username (bina @), "Telegram par milo" button ke liye |
+| `PREMIUM_FROM_YEAR` | optional | jaise `2015`: is saal aur uske baad ke saare titles **Premium** (naam ke saal se). Khaali = saal ka rule band |
+| `PLAN_PRICE` | optional | 1 mahine ka rate, default `99`. Plans: 1, 2, 3, 6, 12 mahine (mahine x rate) |
+| `PLANS` | optional | apne plan/discount: `1=99,2=180,6=500,12=900` (mahine=daam) |
+| `PAY_QR_URL` | optional | payment QR image ka seedha link |
+| `PAY_UPI_ID` | optional | UPI ID (site par copy button ke saath) |
+| `WHATSAPP_URL` | optional | WhatsApp group ka invite link (`https://chat.whatsapp.com/...`). Home, title page aur login page par banner dikhta hai (English / हिंदी / বাংলা). Khaali ho toh banner nahi dikhta |
 | `DEFAULT_QUALITY` | optional | `low` (default): Play dabane par sabse kam quality (480p) chalti hai, user chahe toh player mein badal sakta hai. `high` = sabse achhi quality pehle |
 | `REQUIRE_LOGIN` | optional | `1` daalo toh **kisi bhi link par pehle Sign In / Sign Up** aayega, login ke baad wahi link khulega. Band karne ke liye env hata do. `GMAIL_*` set na ho toh ye apne aap off rehta hai |
 | `ALLOWED_EMAIL_DOMAINS` | optional | default `gmail.com,googlemail.com`. Sab allow karna ho toh `*` |
@@ -125,6 +132,11 @@ OTP email kabhi **Spam** mein jaa sakta hai, user ko site par yahi likha dikhta 
 | `/stats` | kitne titles/files, category ke hisaab se |
 | `/tmdb` | TMDB connection test (The Matrix ki rating dikhata hai) |
 | `/id` | apna Telegram ID |
+| `/code <mahine> [kitne]` | redeem code banao (ek code ek hi baar chalta hai). Jaise `/code 1 5` |
+| `/codes`, `/subs` | unused codes, premium users |
+| `/grant <email ya id> <mahine>`, `/revoke <email ya id>` | seedha premium do / hatao |
+| `/payments` | pending payments, ✅ Approve / ❌ Reject buttons ke saath |
+| `/premium <file id> on\|off\|auto` | ek title ko hamesha premium / hamesha free / saal ke rule par. `/premiumlist` se dekho |
 | `/testmail <email>` | Gmail se mail jaa rahi hai ya nahi, test karo (galti hui toh wajah bhi batata hai) |
 | `/users` | saare users, har ek ke saath 🚫 Block / ✅ Unblock / 🗑 Delete |
 | `/user <email ya id>` | ek user ki detail |
