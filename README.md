@@ -64,12 +64,13 @@ Sab files repo ke **root** mein rakho (koi subfolder nahi):
 | `FQDN` | ✅ | `myapp.koyeb.app` (https:// ke bina) |
 | `DB_URI` | ✅ | MongoDB ka link (Atlas free chalega) |
 | `TMDB_API_KEY` | ⭐ | themoviedb.org → Settings → API (v3 key ya v4 token). Na ho toh sab **Other** mein jaayega |
-| `GMAIL_USER` | 🔐 login ke liye | tumhara Gmail, jaise `rajdev@gmail.com` |
+| `GMAIL_USER` | 🔐 login ke liye | tumhara Gmail, jaise `rajdev9101@gmail.com` |
 | `GMAIL_APP_PASSWORD` | 🔐 login ke liye | Google **App Password** (16 akshar), asli Gmail password nahi. Neeche steps dekho |
 | `OWNER_NAME` | optional | Owner page par naam (default `Raj Dev`) |
 | `OWNER_ABOUT` | optional | Owner page ka "about me" text |
 | `OWNER_PHOTO_URL` | optional | Owner ki photo ka seedha link |
 | `OWNER_TELEGRAM` | optional | Telegram username (bina @), "Telegram par milo" button ke liye |
+| `REQUIRE_LOGIN` | optional | `1` daalo toh **kisi bhi link par pehle Sign In / Sign Up** aayega, login ke baad wahi link khulega. Band karne ke liye env hata do. `GMAIL_*` set na ho toh ye apne aap off rehta hai |
 | `ALLOWED_EMAIL_DOMAINS` | optional | default `gmail.com,googlemail.com`. Sab allow karna ho toh `*` |
 | `DB_NAME` | optional | default `astratoonix_nx` |
 | `SITE_NAME` | optional | default `AstraToonix` |
@@ -123,6 +124,7 @@ OTP email kabhi **Spam** mein jaa sakta hai, user ko site par yahi likha dikhta 
 | `/stats` | kitne titles/files, category ke hisaab se |
 | `/tmdb` | TMDB connection test (The Matrix ki rating dikhata hai) |
 | `/id` | apna Telegram ID |
+| `/testmail <email>` | Gmail se mail jaa rahi hai ya nahi, test karo (galti hui toh wajah bhi batata hai) |
 | `/users` | saare users, har ek ke saath 🚫 Block / ✅ Unblock / 🗑 Delete |
 | `/user <email ya id>` | ek user ki detail |
 | `/block`, `/unblock`, `/deluser <email ya id>` | seedha email se |
