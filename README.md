@@ -149,8 +149,9 @@ OTP email kabhi **Spam** mein jaa sakta hai, user ko site par yahi likha dikhta 
 | `/testmail <email>` | Gmail se mail jaa rahi hai ya nahi, test karo (galti hui toh wajah bhi batata hai) |
 | `/users` | saare users, har ek ke saath 🚫 Block / ✅ Unblock / 🗑 Delete |
 | `/user <email ya id>` | ek user ki detail |
+| `/blockdev <device code>`, `/unblockdev <code>` | us device ko block: site par kuch nahi dikhega. Device code message ke neeche 📱 ke aage hota hai |
 | `/blocked` | saare block kiye users ki list, har ek ke saath ✅ Unblock |
-| `/block`, `/unblock`, `/deluser <email ya id>` | seedha email se |
+| `/block`, `/unblock`, `/deluser <email / NX ID>` (NX123456 wala ID bhi chalta hai) | seedha email se |
 | `/setemail <email ya id> <naya email>` | user ne galat email se account banaya aur purane tak pahunch nahi, tab |
 | `/requests` | pending movie/series requests (✅ ⏳ ❌ buttons) |
 | `/broadcast <text>` | site par update, 🔔 mein dikhta hai |
