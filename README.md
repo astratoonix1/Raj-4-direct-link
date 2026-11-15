@@ -86,7 +86,10 @@ Sab files repo ke **root** mein rakho (koi subfolder nahi):
 | `LOGO_URL` | optional | logo ki image ka seedha link (navbar + player) |
 | `DEFAULT_THUMB_URL` | optional | jin titles ka poster nahi hai unke liye default image |
 | `PORT` | optional | default `8080` |
-| `STREAM_CONCURRENCY`, `STREAM_BUFFER_COUNT` | optional | streaming speed tuning (default 4 aur 8) |
+| `STREAM_CONCURRENCY` | optional | ek viewer ke liye ek saath kitne blocks Telegram se mangein (default `4`) — neeche "Streaming tuning" dekho |
+| `STREAM_BUFFER_COUNT` | optional | ek viewer ke liye aage kitne blocks pehle se taiyaar rakhein (default `8`) |
+| `STREAM_RPS` | optional | **saare viewers ke liye milakar** Telegram ko 1 second mein kitni requests (default `10`) |
+| `STREAM_TIMEOUT_SEC`, `STREAM_MAX_RETRIES` | optional | ek block ka timeout aur retry (default `30` aur `3`) |
 
 ### 🔐 Gmail App Password kaise banaye
 Asli Gmail password SMTP par kaam nahi karta, Google App Password maangta hai.
@@ -133,6 +136,10 @@ OTP email kabhi **Spam** mein jaa sakta hai, user ko site par yahi likha dikhta 
 | `/stats` | kitne titles/files, category ke hisaab se |
 | `/tmdb` | TMDB connection test (The Matrix ki rating dikhata hai) |
 | `/id` | apna Telegram ID |
+| `/start`, `/help` | saare commands, kaise likhne hain us ke saath (do messages mein) |
+| `/ad` | home page ka gol ad popup. Photo bhejo, caption: `/ad text \| https://link`. Ya `/ad <image https link> \| text \| link`. `/adon`, `/adoff`, `/addel` |
+| `/premium` | premium ka abhi ka haal + rule |
+| `/premiumlist` | premium titles ki list |
 | `/code <mahine> [kitne]` | redeem code banao (ek code ek hi baar chalta hai). Jaise `/code 1 5` |
 | `/codes`, `/subs` | unused codes, premium users |
 | `/grant <email ya id> <mahine>`, `/revoke <email ya id>` | seedha premium do / hatao |
@@ -151,6 +158,62 @@ OTP email kabhi **Spam** mein jaa sakta hai, user ko site par yahi likha dikhta 
 | *(user ke message ko Reply)* | jawab site par user ko dikhta hai |
 
 `<id>` = bot ke message mein likha 🆔 number.
+
+---
+
+## 🎬 Streaming tuning (smooth video ke liye)
+
+Pehle ye samjho: **in settings se video ki quality (480p/720p/1080p) nahi badalti** — wo file ki apni quality hoti hai. Ye settings sirf ye tay karti hain ki video **ruke bina** chale. Isliye 1080p file bhi bina atke chalane ke liye inhe badhate hain.
+
+### Ye teen cheezein kya karti hain
+
+| Setting | Default | Kaam |
+|---|---|---|
+| `STREAM_CONCURRENCY` | `4` | ek viewer ke liye ek saath 4 blocks (1 block = 1 MB) Telegram se kheenchte hain |
+| `STREAM_BUFFER_COUNT` | `8` | ek viewer ke liye 8 MB aage ka video pehle se memory mein taiyaar rehta hai |
+| `STREAM_RPS` | `10` | **sabhi viewers milakar** 1 second mein max 10 requests. Yahi asli speed ki chhat (ceiling) hai |
+
+### Sabse zaroori baat
+Telegram ko jaane wali requests ek **common limiter** se guzarti hain (`STREAM_RPS`). Har request ~1 MB laati hai, to default par poori site ki **kul speed ≈ 10 MB/s** hai, aur wo sab viewers mein baant jaati hai.
+
+- 1 viewer, 1080p (≈ 1 MB/s chahiye) → bahut aaram se chalta hai.
+- 5 viewer ek saath → har ek ko ≈ 2 MB/s → theek.
+- 10+ viewer ek saath → har ek ko ≈ 1 MB/s se kam → **ruk-ruk ke chalega**.
+
+Sirf `STREAM_CONCURRENCY` badhane se tab tak fayda nahi jab tak `STREAM_RPS` bhi na badhe, kyunki limiter pehle rok deta hai.
+
+### Kitna rakhein (recommended)
+
+| Plan | CONCURRENCY | BUFFER_COUNT | RPS | RAM / viewer (≈) | Kab |
+|---|---|---|---|---|---|
+| **Default (abhi)** | 4 | 8 | 10 | ~12 MB | 1–5 viewer, kaam chalau |
+| **Better** | 6 | 12 | 20 | ~18 MB | 5–15 viewer, 1080p smooth |
+| **Max** | 8 | 16 | 30 | ~24 MB | bahut viewer ya bhaari 1080p/4K files |
+
+RAM ka hisaab: `(BUFFER_COUNT + CONCURRENCY) × 1 MB` har chalte stream par.
+
+### Badhane ka fayda / nuksan
+
+**Fayda**
+- Video ke beech mein "buffering" kam hoti hai, aage seek karna tez hota hai.
+- Zyada viewers ek saath bina atke dekh paate hain.
+
+**Nuksan**
+- Har viewer par zyada RAM lagti hai. Koyeb ki chhoti machine (512 MB) par 20 viewer × 24 MB = ~480 MB — crash ho sakta hai. Pehle **Better** try karo.
+- `STREAM_RPS` bahut zyada rakha toh Telegram `FLOOD_WAIT` de sakta hai (kuch der ke liye rok deta hai) aur ulta atkega. 20–30 se upar mat jao.
+- Viewer video beech mein chhod de toh pehle se kheenche blocks bekaar jaate hain (bandwidth waste).
+
+### Purane repo (Raj stream) se tulna
+Purane repo ki settings mujhe yahan dikh nahi rahi, isliye main uske number nahi bata sakta. Apne purane Koyeb project ke **Environment variables** mein `STREAM_CONCURRENCY`, `STREAM_BUFFER_COUNT` (ya jo bhi naam ho) dekh lo aur wahi numbers yahan daal do. Jo cheez main pakka bata sakta hoon: purane code mein Telegram connections ka pool tha aur request-limiter nahi tha, jabki ab **ek hi connection aur 10 requests/second ki limit** hai. Isliye wahi numbers (4/8) rakhne par bhi ab streaming kam smooth ho sakti hai — `STREAM_RPS` badhao (20 se shuru karo).
+
+### Kaise badlein
+Koyeb → Service → Settings → Environment variables mein daalo, phir Redeploy:
+```
+STREAM_CONCURRENCY=6
+STREAM_BUFFER_COUNT=12
+STREAM_RPS=20
+```
+Atakna band na ho toh Koyeb ke **Logs** mein `FLOOD_WAIT` dhundo. Mile toh RPS ghatao, na mile toh aur badha sakte ho.
 
 ---
 
