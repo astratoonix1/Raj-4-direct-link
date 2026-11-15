@@ -149,6 +149,7 @@ OTP email kabhi **Spam** mein jaa sakta hai, user ko site par yahi likha dikhta 
 | `/testmail <email>` | Gmail se mail jaa rahi hai ya nahi, test karo (galti hui toh wajah bhi batata hai) |
 | `/users` | saare users, har ek ke saath 🚫 Block / ✅ Unblock / 🗑 Delete |
 | `/user <email ya id>` | ek user ki detail |
+| `/blocked` | saare block kiye users ki list, har ek ke saath ✅ Unblock |
 | `/block`, `/unblock`, `/deluser <email ya id>` | seedha email se |
 | `/setemail <email ya id> <naya email>` | user ne galat email se account banaya aur purane tak pahunch nahi, tab |
 | `/requests` | pending movie/series requests (✅ ⏳ ❌ buttons) |
