@@ -150,6 +150,9 @@ OTP email kabhi **Spam** mein jaa sakta hai, user ko site par yahi likha dikhta 
 | `/users` | saare users, har ek ke saath 🚫 Block / ✅ Unblock / 🗑 Delete |
 | `/user <email ya id>` | ek user ki detail |
 | `/blockdev <device code>`, `/unblockdev <code>` | us device ko block: site par kuch nahi dikhega. Device code message ke neeche 📱 ke aage hota hai |
+| `/visitors` | abhi online (5 min), aaj, 7 din, kul devices, guest vs account, signed-up users |
+| `/guests` | bina login wale devices ki list (pehli/aakhri baar, visits), har ek par 🚫 Block / ✅ Unblock / 💬 Message |
+| `/block <email/NX ID> [7d]`, `/blockdev <code> [12h]` | time ke saath block (30m, 12h, 7d, 2w); time nahi diya toh hamesha. Time poora hote hi apne aap unblock |
 | `/blocked` | saare block kiye users ki list, har ek ke saath ✅ Unblock |
 | `/block`, `/unblock`, `/deluser <email / NX ID>` (NX123456 wala ID bhi chalta hai) | seedha email se |
 | `/setemail <email ya id> <naya email>` | user ne galat email se account banaya aur purane tak pahunch nahi, tab |
