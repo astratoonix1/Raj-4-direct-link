@@ -43,6 +43,9 @@ Sab files repo ke **root** mein rakho (koi subfolder nahi):
 ├── hub.go            users, OTP, sessions, requests, messages
 ├── mailer.go         Gmail se OTP email bhejna
 ├── adminhub.go       bot: /users, /broadcast, request buttons, reply
+├── ad.go, adbot.go   home page ka gol ad popup
+├── block.go          user / device block, visitors, guests
+├── vip.go            Adsterra ads, VIP + Blue Tick, quality lock, subtitles
 ├── store_mongo.go    MongoDB mein save karna
 ├── index.html        home, detail, search, My List, login
 ├── watch.html        player page
@@ -86,6 +89,7 @@ Sab files repo ke **root** mein rakho (koi subfolder nahi):
 | `LOGO_URL` | optional | logo ki image ka seedha link (navbar + player) |
 | `DEFAULT_THUMB_URL` | optional | jin titles ka poster nahi hai unke liye default image |
 | `PORT` | optional | default `8080` |
+| `ADMIN_EMAILS` | optional | site ke admin accounts (comma se alag): `me@gmail.com,two@gmail.com`. Inhe sab quality + no ads + 🔵 tick milta hai |
 | `STREAM_CONCURRENCY` | optional | ek viewer ke liye ek saath kitne blocks Telegram se mangein (default `4`) — neeche "Streaming tuning" dekho |
 | `STREAM_BUFFER_COUNT` | optional | ek viewer ke liye aage kitne blocks pehle se taiyaar rakhein (default `8`) |
 | `STREAM_RPS` | optional | **saare viewers ke liye milakar** Telegram ko 1 second mein kitni requests (default `10`) |
@@ -162,7 +166,27 @@ OTP email kabhi **Spam** mein jaa sakta hai, user ko site par yahi likha dikhta 
 | `/updates` | purane updates, 🗑 se hatao |
 | *(user ke message ko Reply)* | jawab site par user ko dikhta hai |
 
+| `/vip <email/NX ID>`, `/unvip` | hamesha ka VIP (720p/1080p/4K + no ads + 🔵 tick) |
+| `/verify <email/NX ID>`, `/unverify` | sirf 🔵 Blue Tick (VIP nahi) |
+| `/vips` | VIP aur Blue Tick wale sab |
+| `/ads`, `/adson`, `/adsoff` | Adsterra ads ka haal / chalu / band |
+| `/adsbanner <code>`, `/adspop <code>` | Adsterra banner code / popunder-social bar code paste karo. `/adsclear [banner\|pop]` se hatao |
+| `/qualitylock on\|off` | ON: free = 480p tak, 720p+ sirf VIP (premium system ON ho tab kaam karta hai) |
+| `/addsub <file id> <language> <https link>`, `/sublist <file id>`, `/subdel <file id> <number>` | video par subtitle (.srt/.vtt link) lagao / dekho / hatao |
+
 `<id>` = bot ke message mein likha 🆔 number.
+
+---
+
+## 📺 Ads, VIP, Blue Tick, Player (naya)
+
+- **Ads (Adsterra):** Adsterra se banner ka code lo → bot mein `/adsbanner <poora code>`; popunder / social bar ka code → `/adspop <code>`; phir `/adson`. Code **sirf guests aur free users ko** jata hai. Admin (`ADMIN_EMAILS`) aur VIP ko server code bhejta hi nahi, to unhe ad kabhi nahi dikhta. Banner ek sandbox iframe mein chalta hai (site ke data tak pahunch nahi); popunder script site ke page mein chalti hai, isliye sirf bharose ke network ka code lagao.
+- **Status:** `free` / `vip` / `admin`. VIP = premium chalu. 🔵 Blue Tick VIP, admin aur `/verify` wale users ko milta hai: ⋮ menu, My Account aur Connect Owner chat mein.
+- **Player:** apne controls: play/pause, ±10s (double-tap bhi), volume, fullscreen, 🔒 lock screen, ⚙ menu (Quality, Audio, Subtitles, Speed). Quality badalne par wahi jagah se chalta hai.
+- **Quality lock:** `/premiumon` + `/qualitylock on` ke baad free users 480p tak; 720p/1080p/4K par "Go VIP" popup. Lock server par bhi laga hai (`/s/` aur `/d/` par 402), to link se bhi nahi khulta. Premium system OFF hai to lock apne aap band.
+- **Subtitles:** `/addsub 1234 English https://…/en.srt`. Server .srt ko .vtt mein badal deta hai. Viewer apne device se bhi .srt/.vtt load kar sakta hai.
+- **Audio track:** menu tab dikhta hai jab video file mein ek se zyada audio track ho **aur** browser badalne de (Safari deta hai; Chrome/Firefox abhi nahi). Sab browser mein chalane ke liye dubbed file alag upload karni hogi.
+- **TMDB link management** pehle jaisa hi hai (`/premium`, file ko title se jodna, `/tmdb`).
 
 ---
 
