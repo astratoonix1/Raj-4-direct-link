@@ -182,10 +182,9 @@ OTP email kabhi **Spam** mein jaa sakta hai, user ko site par yahi likha dikhta 
 
 - **Ads (Adsterra):** Adsterra se banner ka code lo → bot mein `/adsbanner <poora code>`; popunder / social bar ka code → `/adspop <code>`; phir `/adson`. Code **sirf guests aur free users ko** jata hai. Admin (`ADMIN_EMAILS`) aur VIP ko server code bhejta hi nahi, to unhe ad kabhi nahi dikhta. Banner ek sandbox iframe mein chalta hai (site ke data tak pahunch nahi); popunder script site ke page mein chalti hai, isliye sirf bharose ke network ka code lagao.
 - **Status:** `free` / `vip` / `admin`. VIP = premium chalu. 🔵 Blue Tick VIP, admin aur `/verify` wale users ko milta hai: ⋮ menu, My Account aur Connect Owner chat mein.
-- **Player:** apne controls: play/pause, ±10s (double-tap bhi), volume, fullscreen, 🔒 lock screen, ⚙ menu (Quality, Audio, Subtitles, Speed). Quality badalne par wahi jagah se chalta hai.
+- **Player:** purana wala (browser ka apna player: play/pause, seek, volume, fullscreen, speed, CC). Quality neeche ke boxes se badalti hai.
 - **Quality lock:** `/premiumon` + `/qualitylock on` ke baad free users 480p tak; 720p/1080p/4K par "Go VIP" popup. Lock server par bhi laga hai (`/s/` aur `/d/` par 402), to link se bhi nahi khulta. Premium system OFF hai to lock apne aap band.
-- **Subtitles:** `/addsub 1234 English https://…/en.srt`. Server .srt ko .vtt mein badal deta hai. Viewer apne device se bhi .srt/.vtt load kar sakta hai.
-- **Audio track:** menu tab dikhta hai jab video file mein ek se zyada audio track ho **aur** browser badalne de (Safari deta hai; Chrome/Firefox abhi nahi). Sab browser mein chalane ke liye dubbed file alag upload karni hogi.
+- **Subtitles:** `/addsub 1234 English https://…/en.srt` — server .srt ko .vtt mein badalta hai aur player ke CC menu mein dikhta hai.
 - **TMDB link management** pehle jaisa hi hai (`/premium`, file ko title se jodna, `/tmdb`).
 
 ---
