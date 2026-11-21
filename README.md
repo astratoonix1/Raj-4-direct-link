@@ -45,6 +45,7 @@ Sab files repo ke **root** mein rakho (koi subfolder nahi):
 ├── adminhub.go       bot: /users, /broadcast, request buttons, reply
 ├── ad.go, adbot.go   home page ka gol ad popup
 ├── block.go          user / device block, visitors, guests
+├── agent.go          Gemini AI: owner chat assistant + Admin Agent
 ├── vip.go            Adsterra ads, VIP + Blue Tick, quality lock, subtitles
 ├── store_mongo.go    MongoDB mein save karna
 ├── index.html        home, detail, search, My List, login
@@ -89,6 +90,8 @@ Sab files repo ke **root** mein rakho (koi subfolder nahi):
 | `LOGO_URL` | optional | logo ki image ka seedha link (navbar + player) |
 | `DEFAULT_THUMB_URL` | optional | jin titles ka poster nahi hai unke liye default image |
 | `PORT` | optional | default `8080` |
+| `GEMINI_API_KEY` | optional | Google Gemini API key (aistudio.google.com). Isse AI assistant + Admin Agent chalte hain |
+| `GEMINI_MODEL` | optional | default `gemini-2.5-flash` |
 | `ADMIN_EMAILS` | optional | site ke admin accounts (comma se alag): `me@gmail.com,two@gmail.com`. Inhe sab quality + no ads + 🔵 tick milta hai |
 | `STREAM_CONCURRENCY` | optional | ek viewer ke liye ek saath kitne blocks Telegram se mangein (default `4`) — neeche "Streaming tuning" dekho |
 | `STREAM_BUFFER_COUNT` | optional | ek viewer ke liye aage kitne blocks pehle se taiyaar rakhein (default `8`) |
@@ -168,6 +171,7 @@ OTP email kabhi **Spam** mein jaa sakta hai, user ko site par yahi likha dikhta 
 
 | `/vip <email/NX ID>`, `/unvip` | hamesha ka VIP (720p/1080p/4K + no ads + 🔵 tick) |
 | `/verify <email/NX ID>`, `/unverify` | sirf 🔵 Blue Tick (VIP nahi) |
+| `/ai`, `/aion`, `/aioff` | Contact Owner chat mein AI assistant ka haal / on / off |
 | `/vips` | VIP aur Blue Tick wale sab |
 | `/ads`, `/adson`, `/adsoff` | Adsterra ads ka haal / chalu / band |
 | `/adsbanner <code>`, `/adspop <code>` | Adsterra banner code / popunder-social bar code paste karo. `/adsclear [banner\|pop]` se hatao |
@@ -305,3 +309,16 @@ Auto filter jaise kisi doosre bot ke saath ho toh NX ke liye **alag storage chan
 ---
 
 Built by **Raj Dev** · Stream the Universe
+
+---
+
+## 🤖 AI (Gemini)
+
+`GEMINI_API_KEY` daalo (aistudio.google.com se free key milti hai) aur redeploy karo.
+
+**1. Contact Owner chat mein AI assistant.** User message bhejta hai to AI jawab deta hai (site ke plans, request kaise karein, premium kaise lein, uske apne request ka status…). Bot mein tumhe "🤖 AI ne jawab diya" ka note aata hai. Tum jab bhi Reply karo, us user ke thread mein AI **20 minute chup** rehta hai. Refund / payment problem / abuse jaise sawal par AI sirf "owner ko bata diya" bolta hai. AI koi action nahi kar sakta. `/aioff` se poora band.
+
+**2. Admin Agent.** `ADMIN_EMAILS` wale account se login karo, ⋮ menu mein **🤖 Agent (Admin)**. Seedha likho: "site ka haal", "victim@gmail.com ko 7 din block karo", "ads band karo", "sab ko update bhejo: kal naya course aayega". Jaankari wale kaam turant hote hain. **Badlav wale kaam (block, VIP, ads, premium, broadcast, user ko message, payment approve…) pehle tumse Confirm / Cancel maangte hain.** User delete, email change, code ya env badalna agent nahi kar sakta.
+Safety: agent sirf admin account ke liye hai (server check karta hai), users ke likhe text ko sirf data maana jata hai, aur confirm 15 minute mein expire ho jata hai.
+
+**3. 🤖 Help Assistant (sab ke liye, guests bhi).** ⋮ menu mein **🤖 Help Assistant** aur Sign In / OTP page par "OTP nahi aaya? Help chahiye?" link. Ye sirf website use karna sikhata hai: Gmail se login/signup, OTP **spam / promotions folder** mein dhundna aur "Not spam" karna, Resend, Forgot password, Premium kaise lein (UPI + UTR), movie request, quality (480p free). Baaki sawaal (general gyaan, coding, chit-chat) ko polite "sirf website ki help" bolke mana kar deta hai. Ye koi action nahi kar sakta, koi tool nahi, koi admin data nahi. Limit: 20 sawaal/ghanta har user/guest, 40/ghanta har IP, sawaal max 500 akshar, sirf pichle 10 messages ka context. `/aioff` karoge to ye bhi band ho jata hai.
