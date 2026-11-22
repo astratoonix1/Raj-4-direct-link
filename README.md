@@ -359,6 +359,14 @@ with TelegramClient(StringSession(), API_ID, API_HASH) as c:
 4. Session sirf Koyeb env mein rakho, GitHub/chat mein kabhi nahi.
 
 **Bot commands:** `/idx` (haal), `/idxon`, `/idxoff`, `/idxscan <naam>` (abhi channel mein dhundho, jaise `/idxscan raj`), `/idxsync` (source ke naye messages abhi khincho).
+
+**Poora channel scan (500 / 5,000 / 50,000+ files):** `/idxall` bhejo. Bot private channel ki **poori history** naye se purane tak page-by-page padhta hai, har video file ko TMDB pipeline se guzaarkar index karta hai (source mode mein storage channel mein copy bhi). Baatein:
+- **Resumable:** pointer database mein save hota hai. Koyeb restart/redeploy ho to apne-aap wahin se aage badhta hai. Koi file dobara copy/index nahi hoti.
+- **Dheere aur safe:** Telegram flood-limit se bachne ke liye har page ke beech gap rakha hai. 50,000 files mein kai ghante lag sakte hain, chalne do.
+- **Progress report:** har ~20 minute ya 1000 files par admin ko message aata hai; khatam hone par "Backfill POORA" summary.
+- **Alert spam nahi:** files ki `Created` date original message ki date hoti hai, isliye purani files par "naya episode" bell alert nahi jaata.
+- Jo files TMDB se match nahi hotin wo **Others** mein jaati hain (`/others` dekho, `/fix` se theek karo).
+- `/idxall status` (kitna hua), `/idxall stop` (roko, baad mein `/idxall` se wahin se chalu), `/idxall reset` (shuru se dobara scan). `/idxoff` bhi backfill rok deta hai.
 Bina `TG_STRING_SESSION` ke ye feature band rehta hai, baaki site waise hi chalti hai.
 
 ## 🆕 Naya Episode Alert, 📊 Dashboard, 📲 PWA

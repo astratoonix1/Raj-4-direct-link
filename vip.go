@@ -51,6 +51,7 @@ type vipState struct {
 	idxOff  bool        // auto-index band
 	srcMap  map[int]int // source channel message -> storage message (import yaad)
 	idxLast int         // source channel: yahan tak ke messages dekh liye
+	bf      bfState     // backfill (poora channel scan) ki halat
 }
 
 // loadVipSetting: Hub load ke time settings docs se (hub.go call karta hai)
@@ -85,6 +86,11 @@ func (h *Hub) loadVipSetting(id string, b []byte) {
 					h.vip.srcMap[n] = v
 				}
 			}
+		}
+	case "bf":
+		var s bfState
+		if json.Unmarshal(b, &s) == nil {
+			h.vip.bf = s
 		}
 	case "idxsync":
 		var s struct {

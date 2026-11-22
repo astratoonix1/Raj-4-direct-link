@@ -22,6 +22,7 @@ type ChanMsg struct {
 	ID   int
 	Name string
 	Size int64
+	Date time.Time // message ki asli date (purani file par "naya episode" alert na jaye)
 }
 
 type ChanSearcher interface {
@@ -33,6 +34,8 @@ type ChanSearcher interface {
 	Import(ctx context.Context, srcIDs []int) (map[int]int, error)
 	// NewSince: (source mode) afterID ke baad ke naye media messages aur channel ka current top message ID
 	NewSince(ctx context.Context, afterID int) ([]ChanMsg, int, error)
+	// History: channel ke offsetID se purane (0 = sabse naye se shuru) 100 messages. File wale msgs, kul messages ki ginti (0 = khatam), aur sabse chhota message ID
+	History(ctx context.Context, offsetID int) (files []ChanMsg, n int, minID int, err error)
 }
 
 type IdxReport struct {
@@ -66,6 +69,7 @@ type AutoIndexer struct {
 	mu     sync.Mutex
 	cache  map[string]idxCached
 	flight map[string]chan struct{}
+	bfRun  bool
 }
 
 func NewAutoIndexer(cat *Catalog, pipe *Pipeline, hub *Hub, s ChanSearcher, notify func(string)) *AutoIndexer {
@@ -271,7 +275,11 @@ func (x *AutoIndexer) indexNew(ctx context.Context, fresh []ChanMsg, rep *IdxRep
 			continue
 		}
 		q, rk := detectQuality(m.Name)
-		f := &FileDoc{ID: fid, Name: m.Name, Size: m.Size, Quality: q, QRank: rk, Created: time.Now()}
+		created := m.Date
+		if created.IsZero() {
+			created = time.Now()
+		}
+		f := &FileDoc{ID: fid, Name: m.Name, Size: m.Size, Quality: q, QRank: rk, Created: created}
 		if err := x.cat.AddFile(ctx, f); err != nil {
 			continue
 		}
@@ -350,6 +358,164 @@ func (x *AutoIndexer) StartSync(every time.Duration) {
 			<-t.C
 		}
 	}()
+}
+
+// ---------- Backfill: poora channel andar se scan karke sab files index karna ----------
+
+type bfState struct {
+	On      bool      `json:"on"`
+	Done    bool      `json:"done"`
+	Next    int       `json:"next"` // is message ID se purane messages abhi baaki (0 = sabse naye se shuru)
+	Seen    int       `json:"seen"` // kitne messages dekhe
+	Files   int       `json:"files"`
+	Added   int       `json:"added"`
+	Others  int       `json:"others"`
+	Started time.Time `json:"started"`
+}
+
+func (h *Hub) BF() bfState {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return h.vip.bf
+}
+
+func (h *Hub) setBF(f func(b *bfState)) bfState {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	f(&h.vip.bf)
+	h.put(cSettings, "bf", h.vip.bf)
+	return h.vip.bf
+}
+
+// BackfillStart: shuru / resume. reset=true to bilkul shuru se (jo pehle import ho chuki wo dobara copy nahi hoti)
+func (x *AutoIndexer) BackfillStart(reset bool) {
+	if x == nil {
+		return
+	}
+	x.mu.Lock()
+	if x.bfRun {
+		x.mu.Unlock()
+		return
+	}
+	x.bfRun = true
+	x.mu.Unlock()
+	x.hub.setBF(func(b *bfState) {
+		if reset || b.Done {
+			*b = bfState{}
+		}
+		b.On = true
+		if b.Started.IsZero() {
+			b.Started = time.Now()
+		}
+	})
+	go x.backfillLoop()
+}
+
+func (x *AutoIndexer) BackfillStop() { x.hub.setBF(func(b *bfState) { b.On = false }) }
+
+// ResumeBackfill: restart ke baad agar backfill chal raha tha to wahin se aage badhao
+func (x *AutoIndexer) ResumeBackfill() {
+	if x != nil && x.hub.BF().On && !x.hub.BF().Done {
+		x.BackfillStart(false)
+	}
+}
+
+var bfPageGap = 3 * time.Second // do page ke beech ruk (Telegram ko aaram)
+
+func (x *AutoIndexer) backfillLoop() {
+	defer func() {
+		x.mu.Lock()
+		x.bfRun = false
+		x.mu.Unlock()
+	}()
+	say := func(t string) {
+		if x.notify != nil {
+			x.notify(t)
+		}
+	}
+	// session ready hone ka intezaar (max 5 min)
+	for i := 0; i < 60 && !x.s.Ready(); i++ {
+		time.Sleep(5 * time.Second)
+	}
+	if !x.s.Ready() {
+		x.hub.setBF(func(b *bfState) { b.On = false })
+		say("❌ Backfill ruk gaya: user session ready nahi hua. /idx se check karo, phir /idxall.")
+		return
+	}
+	st := x.hub.BF()
+	say(fmt.Sprintf("📦 Backfill shuru. Ab tak dekhe: %d message, nayi file: %d. Band karne ke liye /idxall stop, haal ke liye /idxall status.", st.Seen, st.Added))
+	lastReport, reportedAdded := time.Now(), st.Added
+	fails := 0
+	for {
+		st = x.hub.BF()
+		if !st.On {
+			say(fmt.Sprintf("⏸ Backfill ruka. Dekhe: %d message, nayi file: %d. /idxall se wahin se aage badhega.", st.Seen, st.Added))
+			return
+		}
+		if !x.hub.IdxEnabled() {
+			x.hub.setBF(func(b *bfState) { b.On = false })
+			say("⏸ Backfill ruka kyunki /idxoff hai.")
+			return
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+		files, n, minID, err := x.s.History(ctx, st.Next)
+		if err != nil {
+			cancel()
+			fails++
+			if fails >= 6 {
+				x.hub.setBF(func(b *bfState) { b.On = false })
+				say("❌ Backfill ruk gaya (Telegram se baar-baar error). /idxall se dobara chalao.")
+				return
+			}
+			time.Sleep(time.Duration(fails) * 30 * time.Second)
+			continue
+		}
+		fails = 0
+		if n == 0 { // history khatam
+			cancel()
+			fin := x.hub.setBF(func(b *bfState) { b.On, b.Done = false, true })
+			say(fmt.Sprintf("✅ Backfill POORA. %d message dekhe, %d nayi file site par aayi.\n⚠️ %d file ka TMDB match nahi mila (“Other” mein gayi), /others se dekho aur /fix karo.", fin.Seen, fin.Added, fin.Others))
+			return
+		}
+		sort.Slice(files, func(i, j int) bool { return files[i].ID < files[j].ID })
+		var fresh []ChanMsg
+		for _, m := range files {
+			if isVideoName(m.Name) && !x.known(m.ID) {
+				fresh = append(fresh, m)
+			}
+		}
+		rep := &IdxReport{Titles: map[string]int{}}
+		for i := 0; i < len(fresh); i += 40 {
+			if err := x.indexNew(ctx, fresh[i:min(i+40, len(fresh))], rep); err != nil {
+				break
+			}
+		}
+		cancel()
+		cur := x.hub.setBF(func(b *bfState) {
+			b.Next = minID
+			b.Seen += n
+			b.Files += len(files)
+			b.Added += rep.Added
+			b.Others += rep.Others
+		})
+		if time.Since(lastReport) > 20*time.Minute || cur.Added-reportedAdded >= 1000 {
+			say(fmt.Sprintf("📦 Backfill chal raha hai: %d message dekhe, %d nayi file index hui, %d “Other” mein.", cur.Seen, cur.Added, cur.Others))
+			lastReport, reportedAdded = time.Now(), cur.Added
+		}
+		time.Sleep(bfPageGap)
+	}
+}
+
+func (x *AutoIndexer) BackfillStatus() string {
+	b := x.hub.BF()
+	state := "⏹ ruka hua"
+	switch {
+	case b.Done:
+		state = "✅ poora ho chuka"
+	case b.On:
+		state = "▶️ chal raha hai"
+	}
+	return fmt.Sprintf("📦 BACKFILL: %s\nDekhe: %d message (%d file wale)\nNayi file site par: %d\n“Other” mein: %d\nAgla pointer: %d", state, b.Seen, b.Files, b.Added, b.Others, b.Next)
 }
 
 // Summary: admin ke liye chhota report
@@ -498,7 +664,7 @@ func (a *App) idxCommand(m *tgbotapi.Message, arg string) bool {
 		if a.idx != nil && a.idx.s.SourceMode() {
 			mode = fmt.Sprintf("Mode: SOURCE channel → storage channel mein copy. Yaad: %d file, sync pointer: %d", len(a.hub.srcMapCopy()), a.hub.IdxLast())
 		}
-		a.send(chat, "🔎 AUTO-INDEX: "+on+"\n"+sess+"\n"+mode+"\n\nJab user search/request kare aur file site par na ho, to storage channel mein dhundh kar index ho jaati hai.\n\n/idxon — chalu\n/idxoff — band\n/idxscan <naam> — abhi channel mein dhundho (jaise /idxscan raj)\n/idxsync — source channel ke naye messages abhi khincho")
+		a.send(chat, "🔎 AUTO-INDEX: "+on+"\n"+sess+"\n"+mode+"\n\nJab user search/request kare aur file site par na ho, to storage channel mein dhundh kar index ho jaati hai.\n\n/idxon — chalu\n/idxoff — band\n/idxscan <naam> — abhi channel mein dhundho (jaise /idxscan raj)\n/idxsync — source channel ke naye messages abhi khincho\n/idxall — poora channel andar se scan karke sab files index karo (status/stop/reset)")
 	case "idxscan":
 		if a.idx == nil {
 			a.send(chat, "❌ TG_STRING_SESSION set nahi hai.")
@@ -528,6 +694,24 @@ func (a *App) idxCommand(m *tgbotapi.Message, arg string) bool {
 				a.send(chat, rep.Summary("✅ Scan poora"))
 			}
 		}(strings.TrimSpace(arg))
+	case "idxall":
+		if a.idx == nil {
+			a.send(chat, "❌ TG_STRING_SESSION set nahi hai.")
+			return true
+		}
+		switch strings.ToLower(strings.TrimSpace(arg)) {
+		case "stop":
+			a.idx.BackfillStop()
+			a.send(chat, "⏸ Backfill rok raha hun (current page poora hone ke baad ruk jayega).")
+		case "status":
+			a.send(chat, a.idx.BackfillStatus())
+		case "reset":
+			a.idx.BackfillStart(true)
+			a.send(chat, "🔄 Backfill bilkul shuru se chala (jo files pehle copy ho chuki wo dobara copy nahi hongi).")
+		default:
+			a.idx.BackfillStart(false)
+			a.send(chat, "📦 Backfill chalu. Poora channel andar se scan hoga aur har file index hogi. Bahut files hon to ghante lag sakte hain, ruk-ruk kar report aati rahegi.\n\n/idxall status — haal\n/idxall stop — roko (baad mein /idxall se wahin se aage)\n/idxall reset — shuru se")
+		}
 	case "idxsync":
 		if a.idx == nil || !a.idx.s.SourceMode() {
 			a.send(chat, "❌ SOURCE_CHANNEL_ID set nahi hai (sync sirf source channel mode mein hota hai).")

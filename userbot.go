@@ -285,7 +285,7 @@ func toChanMsg(m *tg.Message) (ChanMsg, bool) {
 	if name == "" {
 		return ChanMsg{}, false
 	}
-	return ChanMsg{ID: m.ID, Name: name, Size: doc.Size}, true
+	return ChanMsg{ID: m.ID, Name: name, Size: doc.Size, Date: time.Unix(int64(m.Date), 0)}, true
 }
 
 func (u *userSearcher) get() (*tg.Client, *tg.InputPeerChannel, *tg.InputPeerChannel) {
@@ -398,4 +398,50 @@ func (u *userSearcher) NewSince(ctx context.Context, afterID int) ([]ChanMsg, in
 		offsetID = lastID
 	}
 	return out, top, nil
+}
+
+// History: channel ke offsetID se purane 100 messages (0 = sabse naye se). Files, kul messages ginti, sabse chhota message ID
+func (u *userSearcher) History(ctx context.Context, offsetID int) ([]ChanMsg, int, int, error) {
+	api, store, src := u.get()
+	peer := store
+	if u.srcID != 0 {
+		peer = src
+	}
+	if api == nil || peer == nil {
+		return nil, 0, 0, errors.New("user session ready nahi hai")
+	}
+	res, err := api.MessagesGetHistory(ctx, &tg.MessagesGetHistoryRequest{Peer: peer, OffsetID: offsetID, Limit: 100})
+	if err != nil {
+		return nil, 0, 0, err
+	}
+	var msgs []tg.MessageClass
+	switch r := res.(type) {
+	case *tg.MessagesMessages:
+		msgs = r.Messages
+	case *tg.MessagesMessagesSlice:
+		msgs = r.Messages
+	case *tg.MessagesChannelMessages:
+		msgs = r.Messages
+	}
+	var out []ChanMsg
+	n, minID := 0, 0
+	for _, mc := range msgs {
+		var id int
+		switch m := mc.(type) {
+		case *tg.Message:
+			id = m.ID
+			if cm, ok := toChanMsg(m); ok {
+				out = append(out, cm)
+			}
+		case *tg.MessageService:
+			id = m.ID
+		default:
+			continue
+		}
+		n++
+		if minID == 0 || id < minID {
+			minID = id
+		}
+	}
+	return out, n, minID, nil
 }

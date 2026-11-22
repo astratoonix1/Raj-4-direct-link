@@ -1495,6 +1495,7 @@ func (a *App) onCommand(ctx context.Context, m *tgbotapi.Message) {
 			"(Admin Agent chat: site ke ⋮ menu → 🤖 Agent, env GEMINI_API_KEY + ADMIN_EMAILS)\n\n"+
 			"🔎 AUTO-INDEX (channel se)\n"+
 			"/idx — haal, /idxon, /idxoff, /idxscan <naam>, /idxsync — channel se dhundh kar index karo\n"+
+			"/idxall — POORA channel andar se scan karke sab files index (status / stop / reset)\n"+
 			"(env TG_STRING_SESSION; user search/request par file apne-aap site par aa jaati hai)\n\n"+
 			"🎞 QUALITY & SUBTITLES\n"+
 			"/qualitylock on|off — free users 480p tak, 720p+ sirf VIP (premium system ON ho tab)\n"+
@@ -1796,6 +1797,7 @@ func main() {
 		if cfg.SourceChannelID != 0 {
 			app.idx.StartSync(time.Duration(cfg.IdxSyncMin) * time.Minute)
 		}
+		app.idx.ResumeBackfill() // restart se pehle backfill chal raha tha to wahin se aage
 		logger.Info("auto-index chalu (TG_STRING_SESSION mila)", zap.Bool("source_mode", cfg.SourceChannelID != 0))
 	} else {
 		logger.Info("TG_STRING_SESSION nahi hai — auto-index band")
