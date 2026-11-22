@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/gotd/contrib/middleware/floodwait"
-	"github.com/gotd/td/session"
+	tgsession "github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/tg"
 	"go.uber.org/zap"
@@ -56,13 +56,13 @@ func (u *userSearcher) SourceMode() bool { return u.srcID != 0 }
 
 func (u *userSearcher) run(ctx context.Context) {
 	for {
-		data, err := session.TelethonSession(u.sess)
+		data, err := tgsession.TelethonSession(u.sess)
 		if err != nil {
 			u.logger.Error("TG_STRING_SESSION galat hai — Telethon StringSession chahiye (auto-index band)", zap.Error(err))
 			return
 		}
-		storage := new(session.StorageMemory)
-		if err := (session.Loader{Storage: storage}).Save(ctx, data); err != nil {
+		storage := new(tgsession.StorageMemory)
+		if err := (&tgsession.Loader{Storage: storage}).Save(ctx, data); err != nil {
 			u.logger.Error("session load nahi hua", zap.Error(err))
 			return
 		}
@@ -110,7 +110,7 @@ func (u *userSearcher) run(ctx context.Context) {
 // resolvePeer: channel ka access hash nikalo (username se, ya account ke dialogs se)
 func (u *userSearcher) resolvePeer(ctx context.Context, api *tg.Client, chID int64, username string) (*tg.InputPeerChannel, error) {
 	if username != "" {
-		r, err := api.ContactsResolveUsername(ctx, &tg.ContactsResolveUsernameRequest{Username: strings.TrimPrefix(username, "@")})
+		r, err := api.ContactsResolveUsername(ctx, strings.TrimPrefix(username, "@"))
 		if err != nil {
 			return nil, fmt.Errorf("username resolve: %w", err)
 		}
