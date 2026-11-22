@@ -47,6 +47,9 @@ Sab files repo ke **root** mein rakho (koi subfolder nahi):
 ├── block.go          user / device block, visitors, guests
 ├── agent.go          Gemini AI: owner chat assistant + Admin Agent
 ├── vip.go            Adsterra ads, VIP + Blue Tick, quality lock, subtitles
+├── notify.go         naya episode alert (My List wale users ko bell notice)
+├── admin.go          admin dashboard data (/api/admin/stats)
+├── pwa.go            PWA: manifest, service worker, icons
 ├── store_mongo.go    MongoDB mein save karna
 ├── index.html        home, detail, search, My List, login
 ├── watch.html        player page
@@ -311,6 +314,14 @@ Auto filter jaise kisi doosre bot ke saath ho toh NX ke liye **alag storage chan
 Built by **Raj Dev** · Stream the Universe
 
 ---
+
+## 🆕 Naya Episode Alert, 📊 Dashboard, 📲 PWA
+
+**Naye episode ka alert.** Jis user ne series ko **My List** mein rakha hai, use us series ki nayi episode file judte hi bell icon (🔔 Updates) mein "🆕 <Title> ka naya episode aa gaya (S01E05)" notice milta hai, tap karke seedha title khulta hai. Ek saath 10 episode upload karo to **ek hi notice** jaata hai (10 minute jama karke: "10 naye episode, S01E01 se S01E10"). Sirf nayi file (6 ghante ke andar ki) par alert aata hai, `/fix` se purani file dobara attach karne par nahi. Movie par alert nahi aata. User notice ko "✖ Remove" se hata sakta hai, 20 notice aur 30 din se purane khud hat jaate hain.
+
+**Admin Dashboard.** `ADMIN_EMAILS` wale account se login → ⋮ menu → **📊 Dashboard (Admin)** (`/#/admin`). Online abhi, aaj/7 din ke visitors, total aur naye users (14 din ka chart), premium/VIP, **kamai (aaj / 30 din / total)**, pending payments aur requests, top 10 titles (views), latest signups, library size, system on/off. Har 30 second mein khud refresh hota hai. Data sirf admin ko milta hai (server check).
+
+**PWA (App jaisa install).** Chrome/Android: ⋮ menu mein **📲 Install App (Home Screen)** dikhta hai, dabao aur icon home screen par aa jata hai, bina browser bar ke khulta hai. iPhone: Safari → Share → Add to Home Screen (button wahi bata deta hai). Icon aur manifest server khud banata hai, koi image upload nahi karni. Service worker sirf page-navigation sambhalta hai (internet na ho to "Internet nahi hai" page), API, video stream aur download ko nahi chhuta. Install ka button tabhi dikhta hai jab site **https** par ho (Koyeb par hoti hai).
 
 ## 🤖 AI (Gemini)
 

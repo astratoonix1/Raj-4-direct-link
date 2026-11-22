@@ -49,11 +49,12 @@ func prettyTitle(s string) string {
 	}
 	words := strings.Fields(s)
 	for i, w := range words {
-		if w == strings.ToLower(w) && len(w) > 2 {
-			words[i] = strings.ToUpper(w[:1]) + w[1:]
+		r := []rune(w) // rune se kaato, byte se nahi (Hindi/accent wale naam toot jaate the)
+		if w == strings.ToLower(w) && len(r) > 2 {
+			words[i] = strings.ToUpper(string(r[:1])) + string(r[1:])
 		}
 	}
-	return strings.Join(words, " ")
+	return strings.ToValidUTF8(strings.Join(words, " "), "")
 }
 
 // Process ek file ko classify karke catalog se jod deta hai.

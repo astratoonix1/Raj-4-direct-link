@@ -122,5 +122,5 @@ func (g BatchGroup) Text(base string) string {
 	} else {
 		fmt.Fprintf(&sb, "\nSahi title: /fix %d <tmdb link>\nCategory: /cat %d anime|cartoon|series|movie", first, first)
 	}
-	return sb.String()
+	return strings.ToValidUTF8(sb.String(), "")
 }
