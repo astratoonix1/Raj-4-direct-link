@@ -17,7 +17,8 @@ import (
 type Note struct {
 	ID   string    `json:"id"`
 	Text string    `json:"text"`
-	Key  string    `json:"key,omitempty"` // title key: click karke seedha title khule
+	Key  string    `json:"key,omitempty"`  // title key: click karke seedha title khule
+	Kind string    `json:"kind,omitempty"` // "" = naya episode, "added" = aapki request poori hui
 	T    time.Time `json:"t"`
 }
 
@@ -268,4 +269,45 @@ func (a *Accounts) RecordView(r *http.Request, titleKey string) {
 		who = "d:" + DevCode(cid)
 	}
 	a.hub.RecordView(titleKey, who)
+}
+
+// FulfillRequests: title site par aa gaya. Jis user ne yahi title request kiya tha uski request
+// "added" ho jaati hai aur use bell mein notice milta hai (login user ko tap-karke-dekho wala).
+// Sirf naam bilkul match ho (spaces/symbols ignore) aur saal dono mein ho to wahi mile.
+func (h *Hub) FulfillRequests(key, title string, aliases []string, year int) {
+	names := map[string]bool{normText(title): true}
+	for _, a := range aliases {
+		if x := normText(a); x != "" {
+			names[x] = true
+		}
+	}
+	delete(names, "")
+	if len(names) == 0 {
+		return
+	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	for _, r := range h.requests {
+		if r.Status != "pending" && r.Status != "working" {
+			continue
+		}
+		if !names[normText(r.Name)] || (r.Year != 0 && year != 0 && r.Year != year) {
+			continue
+		}
+		r.Status = "added"
+		h.put(cRequests, r.ID, r)
+		text := fmt.Sprintf("✅ Aapki request “%s” site par add ho gayi hai! Dekhne ke liye tap karo.", r.Name)
+		if uid := strings.TrimPrefix(r.Who, "u:"); uid != r.Who && h.users[uid] != nil {
+			u := h.users[uid]
+			now := time.Now()
+			u.Notes = append(pruneNotes(u.Notes, now), Note{ID: randHex(4), Text: text, Key: key, Kind: "added", T: now})
+			if len(u.Notes) > maxNotes {
+				u.Notes = u.Notes[len(u.Notes)-maxNotes:]
+			}
+			h.put(cUsers, u.ID, u)
+		} else {
+			// guest: unka notice owner-chat thread mein jaata hai
+			h.addMsgLocked(r.Who, "Owner", "a", fmt.Sprintf(statusText["added"], r.Name), true)
+		}
+	}
 }

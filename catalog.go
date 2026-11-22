@@ -81,6 +81,8 @@ type Store interface {
 type Catalog struct {
 	// OnAttach: file title se judne par (naye episode ka alert). age = file kitni purani hai.
 	OnAttach func(key, title string, season, episode int, age time.Duration)
+	// OnTitle: file jud gayi, title ready hai (request poori karne ke liye).
+	OnTitle  func(key, title string, aliases []string, year int)
 	mu       sync.RWMutex
 	store    Store
 	titles   map[string]*TitleDoc
@@ -173,8 +175,13 @@ func (c *Catalog) Attach(ctx context.Context, fileID int, titleKey string, seaso
 		tcopy = &x
 	}
 	hook, ttl := c.OnAttach, ""
+	onTitle := c.OnTitle
+	var tAliases []string
+	tYear := 0
 	if tcopy != nil {
 		ttl = tcopy.Title
+		tAliases = append([]string(nil), tcopy.Aliases...)
+		tYear = tcopy.Year
 	}
 	age := time.Since(f.Created)
 	if f.Created.IsZero() {
@@ -183,6 +190,9 @@ func (c *Catalog) Attach(ctx context.Context, fileID int, titleKey string, seaso
 	c.mu.Unlock()
 	if hook != nil {
 		hook(titleKey, ttl, season, episode, age)
+	}
+	if onTitle != nil && ttl != "" {
+		onTitle(titleKey, ttl, tAliases, tYear)
 	}
 	if dropOld {
 		_ = c.store.DeleteTitle(ctx, oldKey)
