@@ -50,6 +50,8 @@ Sab files repo ke **root** mein rakho (koi subfolder nahi):
 ├── notify.go         naya episode alert (My List wale users ko bell notice)
 ├── admin.go          admin dashboard data (/api/admin/stats)
 ├── pwa.go            PWA: manifest, service worker, icons
+├── autoindex.go      channel se auto-index (search -> pipeline), /idx commands
+├── userbot.go        Telegram user-session se channel search (string session)
 ├── store_mongo.go    MongoDB mein save karna
 ├── index.html        home, detail, search, My List, login
 ├── watch.html        player page
@@ -315,9 +317,47 @@ Built by **Raj Dev** · Stream the Universe
 
 ---
 
+## 🔎 Auto-Index (channel se apne-aap files utha lena)
+
+User site par kuch search kare (ya movie **request** kare) aur wo site par na ho, to site tumhare **storage channel** mein user-session se naam search karti hai, jo video files milti hain unhe purane pipeline (naam padhna → TMDB match → title/quality grouping) se index kar deti hai. User ko turant result dikh jata hai ("N nayi file mili aur site par add ho gayi ✅"), aur request wali movie mil gayi to request apne-aap "added" ho kar user ko bell notice jata hai.
+
+**Kaise judta hai (jaise tumne bola tha):**
+- **Part 1 / Part 2** alag title bante hain, **ek movie ki alag quality** (480p/720p/1080p) ek hi title mein, **ek naam ki do alag movies** (TMDB ID / saal alag) dono alag title. Ye wahi logic hai jo bot se upload karne par chalta hai.
+- Sirf wahi files jinke naam mein query ka har shabd poora ho ("raj" → `Raj.2019.mkv` haan, `Rajesh.mkv` nahi). Sirf video files (mkv, mp4, avi, mov, webm, m4v, ts, flv, wmv, mpg, 3gp). Ek search mein max 60 nayi files.
+- Jo files ka TMDB match nahi milta wo "Other" mein jaati hain (jaise bot upload mein) aur tumhe bot mein ⚠️ ke saath bataya jata hai, `/fix` se theek karo.
+- Har nayi index hui file ka summary tumhe bot mein aata hai.
+
+**Limits (Telegram account ki suraksha ke liye):** ek hi naam ka result 30 minute cache hota hai, ek saath wahi search ek hi baar chalti hai, poori site par max 12 channel-search/minute, har user/guest 8/ghanta, har IP 20/ghanta.
+
+**Setup (env):**
+| Variable | Kya |
+|---|---|
+| `TG_STRING_SESSION` | **Telethon StringSession** (naye alag Telegram account ka) |
+| `TG_CHANNEL_USERNAME` | optional, sirf agar storage channel public hai (nahi to account ke chats se CHANNEL_ID dhundha jata hai) |
+| `API_ID`, `API_HASH`, `CHANNEL_ID` | pehle se hain, wahi chalenge |
+
+**String session banana (Telethon, ek baar, apne computer par):**
+```python
+from telethon.sync import TelegramClient
+from telethon.sessions import StringSession
+API_ID, API_HASH = 123456, "tumhara_api_hash"   # wahi jo Koyeb mein API_ID / API_HASH hain
+with TelegramClient(StringSession(), API_ID, API_HASH) as c:
+    print(c.session.save())
+```
+⚠️ **Zaroori:**
+1. **Naya alag Telegram account** (nayi SIM/number) use karo, apna personal nahi. String session = us account ka password.
+2. Us account ko storage channel mein **member** banao.
+3. Ye session **sirf yahin** use hoga. Apne Telethon userbot ke saath **same session mat chalao**, nahi to Telegram dono ko logout kar sakta hai (`AUTH_KEY_DUPLICATED`). Naya login karke naya session banao.
+4. Session sirf Koyeb env mein rakho, GitHub/chat mein kabhi nahi.
+
+**Bot commands:** `/idx` (haal), `/idxon`, `/idxoff`, `/idxscan <naam>` (abhi channel mein dhundho, jaise `/idxscan raj`).
+Bina `TG_STRING_SESSION` ke ye feature band rehta hai, baaki site waise hi chalti hai.
+
 ## 🆕 Naya Episode Alert, 📊 Dashboard, 📲 PWA
 
 **Naye episode ka alert.** Jis user ne series ko **My List** mein rakha hai, use us series ki nayi episode file judte hi bell icon (🔔 Updates) mein "🆕 <Title> ka naya episode aa gaya (S01E05)" notice milta hai, tap karke seedha title khulta hai. Ek saath 10 episode upload karo to **ek hi notice** jaata hai (10 minute jama karke: "10 naye episode, S01E01 se S01E10"). Sirf nayi file (6 ghante ke andar ki) par alert aata hai, `/fix` se purani file dobara attach karne par nahi. Movie par alert nahi aata. User notice ko "✖ Remove" se hata sakta hai, 20 notice aur 30 din se purane khud hat jaate hain.
+
+**Request poori hone par apne-aap notice.** Jab tum kisi movie/series ki file upload karte ho aur uska title (TMDB naam ya alias) kisi user ki pending/working request se **bilkul match** karta hai (spaces/symbols ignore, saal ho to wo bhi), to request apne-aap **"added"** ho jaati hai aur us user ko bell mein "✅ Aapki request “<naam>” site par add ho gayi hai! Dekhne ke liye tap karo." aata hai, tap karte hi title khulta hai. Guest ki request ka notice owner-chat mein jaata hai. Alag saal ya alag naam ki request pending hi rehti hai, wo tum bot se manually "added" kar sakte ho (purana tarika waise hi chalta hai).
 
 **Admin Dashboard.** `ADMIN_EMAILS` wale account se login → ⋮ menu → **📊 Dashboard (Admin)** (`/#/admin`). Online abhi, aaj/7 din ke visitors, total aur naye users (14 din ka chart), premium/VIP, **kamai (aaj / 30 din / total)**, pending payments aur requests, **Unique devices** (kul kitne alag device aaye) aur **Unique viewers** (kitne alag log/device ne video chalayi, ek insaan ek hi baar), top 10 titles (👁 kul play · 👤 unique), latest signups, library size, system on/off. Har 30 second mein khud refresh hota hai. Data sirf admin ko milta hai (server check). Unique viewers ki ginti is update ke **baad** se shuru hoti hai (purane views mein ye info save nahi thi); login user ek insaan ki tarah ginta hai, guest device ke code se.
 

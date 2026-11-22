@@ -28,7 +28,8 @@ type Accounts struct {
 	ApkURL     string
 	ApkVersion string
 	PayUPI     string
-	Gemini     *Gemini // GEMINI_API_KEY; nil = AI band
+	Gemini     *Gemini      // GEMINI_API_KEY; nil = AI band
+	Idx        *AutoIndexer // TG_STRING_SESSION ho tab: channel se auto-index
 	ag         agentState
 	Admins     map[string]bool // ADMIN_EMAILS (lowercase) — site admin accounts
 	hub        *Hub
@@ -380,6 +381,7 @@ func (a *Accounts) Register(mux *http.ServeMux) {
 	a.helpHandlers(mux)
 	a.adminHandlers(mux)
 	a.pwaHandlers(mux)
+	a.discoverHandler(mux)
 	mux.HandleFunc("/api/premium/redeem", func(w http.ResponseWriter, r *http.Request) {
 		var b struct {
 			Code string `json:"code"`

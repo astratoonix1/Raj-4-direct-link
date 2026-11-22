@@ -582,7 +582,7 @@ function doLogout(){
 }
 /* ============ inbox: updates + owner ke jawab + request status ============ */
 var INBOX={updates:[],thread:[],requests:[]};
-function feed(){var f=[];(INBOX.updates||[]).forEach(function(u){f.push({k:'u',t:Date.parse(u.t),text:u.text})});(INBOX.notes||[]).forEach(function(n){f.push({k:'n',t:Date.parse(n.t),text:n.text,key:n.key,id:n.id})});(INBOX.thread||[]).forEach(function(m){if(m.dir==='a')f.push({k:'r',t:Date.parse(m.t),text:m.text,auto:m.auto,ai:m.ai})});f.sort(function(a,b){return b.t-a.t});return f}
+function feed(){var f=[];(INBOX.updates||[]).forEach(function(u){f.push({k:'u',t:Date.parse(u.t),text:u.text})});(INBOX.notes||[]).forEach(function(n){f.push({k:'n',t:Date.parse(n.t),text:n.text,key:n.key,id:n.id,kind:n.kind})});(INBOX.thread||[]).forEach(function(m){if(m.dir==='a')f.push({k:'r',t:Date.parse(m.t),text:m.text,auto:m.auto,ai:m.ai})});f.sort(function(a,b){return b.t-a.t});return f}
 function paintBadge(){
   var f=feed(),s=ls('atx-seen',null);
   if(s===null){s=f.length?f[0].t:1;ss('atx-seen',s)}
@@ -729,9 +729,23 @@ function renderBrowse(cat,genre){
 function renderSearch(q){
   setActive('');
   if(!sin.value&&q){sin.value=q;sbox.classList.add('open')}
-  app.innerHTML='<div class="page"><h1>“'+esc(q)+'”</h1><div class="grid" id="grid"></div></div>';
+  app.innerHTML='<div class="page"><h1>“'+esc(q)+'”</h1><div class="hint" id="sh" style="color:var(--mut);margin:-6px 0 10px"></div><div class="grid" id="grid"></div></div>';
+  var seen=false;try{seen=sessionStorage.getItem('atx-disc:'+q.toLowerCase())==='1'}catch(e){}
+  function show(d,final){
+    reg(d.items);
+    if(d.items.length){$('#grid').innerHTML=d.items.map(function(c){return cardHTML(c)}).join('');return true}
+    if(final)$('#grid').innerHTML='<div class="empty" style="grid-column:1/-1"><b>No results found 😕</b>Try a different title or the name of an actor.</div>';
+    return false}
   api('/api/search?q='+encodeURIComponent(q)).then(function(d){
-    reg(d.items);$('#grid').innerHTML=d.items.length?d.items.map(function(c){return cardHTML(c)}).join(''):'<div class="empty" style="grid-column:1/-1"><b>No results found 😕</b>Try a different title or the name of an actor.</div>';
+    if(show(d,seen)||seen)return;
+    // site par nahi mila: channel mein dhundho (ek query par ek hi baar)
+    try{sessionStorage.setItem('atx-disc:'+q.toLowerCase(),'1')}catch(e){}
+    $('#sh').textContent='🔎 Pura library mein dhundh raha hun…';
+    post('/api/discover',{q:q}).then(function(r){
+      if(!r.enabled){$('#sh').textContent='';show(d,true);return}
+      if(r.added>0){api('/api/search?q='+encodeURIComponent(q)).then(function(d2){$('#sh').textContent=r.added+' nayi file mili aur site par add ho gayi ✅';show(d2,true)})}
+      else{$('#sh').textContent='';show(d,true)}
+    }).catch(function(){$('#sh').textContent='';show(d,true)});
   });
 }
 
@@ -1047,7 +1061,7 @@ function renderUpdates(){
   setActive('');
   app.innerHTML='<div class="page"><div class="pbox"><h1>🔔 Updates</h1><div id="ul"><div class="sub">Loading…</div></div></div></div>';
   api('/api/inbox').then(function(d){INBOX=d;var seen=ls('atx-seen',0),f=feed();
-    $('#ul').innerHTML=f.length?f.map(function(x){return '<div class="upd'+(x.t>seen?' new':'')+'"><div class="uh">'+(x.k==='n'?'🆕 New episode':x.k==='u'?'📢 Update':(x.auto?'📌 Request status':(x.ai?'🤖 AI Assistant':'💬 Reply from owner')))+'<span>'+fmtT(x.t)+'</span></div><p>'+esc(x.text)+'</p>'+(x.k==='r'&&!x.auto?'<a href="#/contact">Reply ▶</a>':'')+(x.k==='n'?'<a href="#/t/'+encodeURIComponent(x.key||'')+'">Watch ▶</a> <a class="ndel" data-id="'+esc(x.id||'')+'" style="margin-left:14px;color:var(--mut);cursor:pointer">✖ Remove</a>':'')+'</div>'}).join(''):'<div class="empty"><b>No updates yet</b>New updates will show up here.</div>';
+    $('#ul').innerHTML=f.length?f.map(function(x){return '<div class="upd'+(x.t>seen?' new':'')+'"><div class="uh">'+(x.k==='n'?(x.kind==='added'?'✅ Request added':'🆕 New episode'):x.k==='u'?'📢 Update':(x.auto?'📌 Request status':(x.ai?'🤖 AI Assistant':'💬 Reply from owner')))+'<span>'+fmtT(x.t)+'</span></div><p>'+esc(x.text)+'</p>'+(x.k==='r'&&!x.auto?'<a href="#/contact">Reply ▶</a>':'')+(x.k==='n'?'<a href="#/t/'+encodeURIComponent(x.key||'')+'">Watch ▶</a> <a class="ndel" data-id="'+esc(x.id||'')+'" style="margin-left:14px;color:var(--mut);cursor:pointer">✖ Remove</a>':'')+'</div>'}).join(''):'<div class="empty"><b>No updates yet</b>New updates will show up here.</div>';
     Array.prototype.forEach.call(document.querySelectorAll('.ndel'),function(b){b.onclick=function(){var id=b.getAttribute('data-id');post('/api/notes/clear',{id:id}).then(function(){INBOX.notes=(INBOX.notes||[]).filter(function(n){return n.id!==id});renderUpdates()}).catch(function(){})}});
     markSeen()}).catch(function(){$('#ul').innerHTML='<div class="sub">Could not load.</div>'});
 }

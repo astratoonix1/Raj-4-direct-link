@@ -44,10 +44,11 @@ type SubTrack struct {
 }
 
 type vipState struct {
-	ads   AdsCfg
-	subs  map[int][]SubTrack
-	qlock bool
-	aiOff bool // AI support band
+	ads    AdsCfg
+	subs   map[int][]SubTrack
+	qlock  bool
+	aiOff  bool // AI support band
+	idxOff bool // auto-index band
 }
 
 // loadVipSetting: Hub load ke time settings docs se (hub.go call karta hai)
@@ -70,6 +71,13 @@ func (h *Hub) loadVipSetting(id string, b []byte) {
 					h.vip.subs[n] = v
 				}
 			}
+		}
+	case "idx":
+		var s struct {
+			Off bool `json:"off"`
+		}
+		if json.Unmarshal(b, &s) == nil {
+			h.vip.idxOff = s.Off
 		}
 	case "ai":
 		var s struct {

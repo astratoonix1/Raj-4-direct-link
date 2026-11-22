@@ -69,26 +69,28 @@ type Config struct {
 	LogoURL   string
 	ThumbURL  string
 
-	GmailUser      string
-	GmailPass      string
-	AllowedDomains []string
-	OwnerName      string
-	OwnerAbout     string
-	OwnerPhoto     string
-	OwnerTelegram  string
-	RequireLogin   bool
-	DefaultQuality string
-	WhatsAppURL    string
-	PayQR          string
-	ApkURL         string
-	ApkVersion     string
-	AdminEmails    map[string]bool
-	GeminiKey      string
-	GeminiModel    string
-	PayUPI         string
-	PremiumFrom    int
-	PremiumOn      bool
-	Plans          []Plan
+	GmailUser       string
+	GmailPass       string
+	AllowedDomains  []string
+	OwnerName       string
+	OwnerAbout      string
+	OwnerPhoto      string
+	OwnerTelegram   string
+	RequireLogin    bool
+	DefaultQuality  string
+	WhatsAppURL     string
+	PayQR           string
+	ApkURL          string
+	ApkVersion      string
+	AdminEmails     map[string]bool
+	GeminiKey       string
+	GeminiModel     string
+	TGStringSession string // user session (auto-index ke liye), optional
+	TGChannelUser   string // optional: public channel ka username
+	PayUPI          string
+	PremiumFrom     int
+	PremiumOn       bool
+	Plans           []Plan
 
 	StreamConcurrency int
 	StreamBufferCount int
@@ -198,6 +200,8 @@ func loadConfig() (*Config, error) {
 	cfg.ApkVersion = strings.TrimSpace(os.Getenv("APK_VERSION"))
 	cfg.GeminiKey = os.Getenv("GEMINI_API_KEY")
 	cfg.GeminiModel = os.Getenv("GEMINI_MODEL")
+	cfg.TGStringSession = strings.TrimSpace(os.Getenv("TG_STRING_SESSION"))
+	cfg.TGChannelUser = strings.TrimSpace(os.Getenv("TG_CHANNEL_USERNAME"))
 	cfg.AdminEmails = map[string]bool{}
 	for _, e := range strings.FieldsFunc(os.Getenv("ADMIN_EMAILS"), func(r rune) bool { return r == ',' || r == ' ' || r == ';' }) {
 		if e = strings.ToLower(strings.TrimSpace(e)); e != "" {
@@ -702,6 +706,7 @@ type App struct {
 	cache  *infoCache
 	cat    *Catalog
 	pipe   *Pipeline
+	idx    *AutoIndexer
 	hub    *Hub
 	acc    *Accounts
 	batch  *batcher
@@ -1480,6 +1485,9 @@ func (a *App) onCommand(ctx context.Context, m *tgbotapi.Message) {
 			"🤖 AI (Gemini)\n"+
 			"/ai — haal, /aion, /aioff — Contact Owner chat mein AI assistant\n"+
 			"(Admin Agent chat: site ke ⋮ menu → 🤖 Agent, env GEMINI_API_KEY + ADMIN_EMAILS)\n\n"+
+			"🔎 AUTO-INDEX (channel se)\n"+
+			"/idx — haal, /idxon, /idxoff, /idxscan <naam> — channel mein dhundh kar index karo\n"+
+			"(env TG_STRING_SESSION; user search/request par file apne-aap site par aa jaati hai)\n\n"+
 			"🎞 QUALITY & SUBTITLES\n"+
 			"/qualitylock on|off — free users 480p tak, 720p+ sirf VIP (premium system ON ho tab)\n"+
 			"/addsub <file id> <language> <https .srt/.vtt link>, /sublist <file id>, /subdel <file id> <number>\n\n"+
@@ -1766,9 +1774,21 @@ func main() {
 	cat.SetPremiumFrom(cfg.PremiumFrom)
 	hub.OnRequest = app.notifyRequest
 	cat.OnAttach = hub.NoteAttach
+	cat.OnTitle = hub.FulfillRequests
 	hub.OnUserMsg = app.notifyUserMsg
 	app.hub = hub
 	app.acc = &Accounts{Gemini: NewGemini(cfg.GeminiKey, cfg.GeminiModel, os.Getenv("GEMINI_BASE")), Admins: cfg.AdminEmails, ApkURL: cfg.ApkURL, ApkVersion: cfg.ApkVersion, PayQR: cfg.PayQR, PayUPI: cfg.PayUPI, Gate: cfg.RequireLogin, hub: hub, cat: cat, tmdb: tm, owner: OwnerInfo{Name: cfg.OwnerName, About: cfg.OwnerAbout, Photo: cfg.OwnerPhoto, Telegram: cfg.OwnerTelegram}}
+	if cfg.TGStringSession != "" {
+		app.idx = NewAutoIndexer(app.cat, app.pipe, hub, newUserSearcher(cfg, logger), func(t string) { app.toAdmins(t, nil) })
+		app.acc.Idx = app.idx
+		hub.OnRequest = func(r *Request) {
+			app.notifyRequest(r)
+			app.idx.OnRequest(r)
+		}
+		logger.Info("auto-index chalu (TG_STRING_SESSION mila)")
+	} else {
+		logger.Info("TG_STRING_SESSION nahi hai — auto-index band")
+	}
 	if n, b := hub.UserCount(); n > 0 {
 		logger.Info("users loaded", zap.Int("users", n), zap.Int("blocked", b), zap.Bool("email", mailer.Enabled()))
 	}
