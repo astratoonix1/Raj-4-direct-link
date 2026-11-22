@@ -6,6 +6,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"sort"
 	"strings"
 	"sync"
@@ -177,4 +178,94 @@ func (h *Hub) ClearNotes(uid, id string) int {
 		h.put(cUsers, u.ID, u)
 	}
 	return n
+}
+
+// ---------- Unique viewers ----------
+// Har title ke liye: kitne alag log (login user) / device (guest) ne usse chalaya.
+
+const (
+	uvPrefix = "uv:"
+	uvCap    = 5000 // ek title par itne se zyada nahi rakhte
+)
+
+type uvState struct {
+	m map[string]map[string]bool // titleKey -> {"u:<uid>" / "d:<cid>"}
+}
+
+func (h *Hub) loadUV(id string, b []byte) {
+	var d struct {
+		K string   `json:"k"`
+		W []string `json:"w"`
+	}
+	if json.Unmarshal(b, &d) != nil || d.K == "" {
+		return
+	}
+	if h.uv.m == nil {
+		h.uv.m = map[string]map[string]bool{}
+	}
+	s := map[string]bool{}
+	for _, w := range d.W {
+		s[w] = true
+	}
+	h.uv.m[d.K] = s
+}
+
+// RecordView: who = "u:<uid>" ya "d:<cid>". Naya viewer ho tabhi save hota hai.
+func (h *Hub) RecordView(titleKey, who string) {
+	if titleKey == "" || who == "" {
+		return
+	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if h.uv.m == nil {
+		h.uv.m = map[string]map[string]bool{}
+	}
+	s := h.uv.m[titleKey]
+	if s == nil {
+		s = map[string]bool{}
+		h.uv.m[titleKey] = s
+	}
+	if s[who] || len(s) >= uvCap {
+		return
+	}
+	s[who] = true
+	w := make([]string, 0, len(s))
+	for k := range s {
+		w = append(w, k)
+	}
+	sort.Strings(w)
+	h.put(cSettings, uvPrefix+titleKey, map[string]any{"k": titleKey, "w": w})
+}
+
+// UniqueViewers: har title ke unique viewers + sab titles ka kul (ek insaan ek hi baar)
+func (h *Hub) UniqueViewers() (perTitle map[string]int, total, users, guests int) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	perTitle = map[string]int{}
+	all := map[string]bool{}
+	for k, s := range h.uv.m {
+		perTitle[k] = len(s)
+		for w := range s {
+			all[w] = true
+		}
+	}
+	for w := range all {
+		if strings.HasPrefix(w, "u:") {
+			users++
+		} else {
+			guests++
+		}
+	}
+	return perTitle, len(all), users, guests
+}
+
+// RecordView (Accounts): request se pehchano ki viewer kaun hai
+func (a *Accounts) RecordView(r *http.Request, titleKey string) {
+	who := ""
+	if u := a.user(r); u != nil {
+		who = "u:" + u.ID
+	} else if cid := r.Header.Get("X-Cid"); ValidCID(cid) {
+		who = "d:" + DevCode(cid)
+	}
+	a.hub.RecordView(titleKey, who)
 }

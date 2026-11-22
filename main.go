@@ -848,7 +848,7 @@ func (a *App) servePage(w http.ResponseWriter, name string) {
 
 func (a *App) routes() http.Handler {
 	mux := http.NewServeMux()
-	(&API{cat: a.cat, siteName: a.cfg.SiteName, logoURL: a.cfg.LogoURL, thumbURL: a.cfg.ThumbURL, defQ: a.cfg.DefaultQuality, waURL: a.cfg.WhatsAppURL, extra: a.acc.ExtraConfig}).Register(mux)
+	(&API{cat: a.cat, siteName: a.cfg.SiteName, logoURL: a.cfg.LogoURL, thumbURL: a.cfg.ThumbURL, defQ: a.cfg.DefaultQuality, waURL: a.cfg.WhatsAppURL, extra: a.acc.ExtraConfig, onView: a.acc.RecordView}).Register(mux)
 	a.acc.AdFetch = a.fetchTGFile
 	a.acc.Register(mux)
 	mux.HandleFunc("/s/", func(w http.ResponseWriter, r *http.Request) {

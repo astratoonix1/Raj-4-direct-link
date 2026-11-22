@@ -274,7 +274,8 @@ func (c *Catalog) DeleteFile(ctx context.Context, id int) bool {
 	return true
 }
 
-func (c *Catalog) AddView(fileID int) {
+// AddView: view jodta hai, title ki key wapas deta hai (unique viewer ginne ke liye).
+func (c *Catalog) AddView(fileID int) string {
 	c.mu.Lock()
 	f := c.files[fileID]
 	var key string
@@ -288,6 +289,7 @@ func (c *Catalog) AddView(fileID int) {
 	if key != "" {
 		go func() { _ = c.store.AddViews(context.Background(), key, 1) }()
 	}
+	return key
 }
 
 // ---------- padhna ----------

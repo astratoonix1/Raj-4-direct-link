@@ -196,6 +196,7 @@ type Hub struct {
 	q  chan dbOp
 
 	ep        epState
+	uv        uvState
 	OnRequest func(r *Request)
 	OnUserMsg func(m *Msg, code, email string)
 	OnPayment func(p *PayReq)

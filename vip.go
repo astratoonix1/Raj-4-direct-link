@@ -52,6 +52,10 @@ type vipState struct {
 
 // loadVipSetting: Hub load ke time settings docs se (hub.go call karta hai)
 func (h *Hub) loadVipSetting(id string, b []byte) {
+	if strings.HasPrefix(id, uvPrefix) {
+		h.loadUV(id, b)
+		return
+	}
 	switch id {
 	case cAdsKey:
 		json.Unmarshal(b, &h.vip.ads)

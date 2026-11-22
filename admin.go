@@ -14,6 +14,7 @@ type dashTitle struct {
 	Category string `json:"category"`
 	Views    int    `json:"views"`
 	Files    int    `json:"files"`
+	Uniq     int    `json:"uniq"`
 }
 
 type dashDay struct {
@@ -140,11 +141,24 @@ func (a *Accounts) dashboard() map[string]any {
 	}
 
 	nt, nf, sz, cats, best := a.cat.dashStats(10)
+	uvT, uvTotal, uvUsers, uvGuests := h.UniqueViewers()
+	for i := range best {
+		best[i].Uniq = uvT[best[i].Key]
+	}
+	h.mu.Lock()
+	devUsers := 0
+	for _, d := range h.seen {
+		if d.UID != "" {
+			devUsers++
+		}
+	}
+	h.mu.Unlock()
 	return map[string]any{
 		"time": now,
 		"users": map[string]any{"total": total, "blocked": blocked, "new_today": newToday, "new_7d": new7, "new_30d": new30,
 			"vip": vips, "ticks": ticks, "premium_active": len(subs), "lifetime": lifetime, "recent": recent, "per_day": days},
-		"visits":   map[string]any{"online": vs.Online, "today": vs.Today, "week": vs.Week, "guests": vs.Guests, "devices": vs.Total},
+		"visits":   map[string]any{"online": vs.Online, "today": vs.Today, "week": vs.Week, "guests": vs.Guests, "devices": vs.Total, "devices_users": devUsers},
+		"viewers":  map[string]any{"unique": uvTotal, "users": uvUsers, "guests": uvGuests},
 		"money":    map[string]any{"total": revAll, "last_30d": rev30, "today": revToday, "paid": nPaid, "pending": pays, "pending_n": len(pend)},
 		"library":  map[string]any{"titles": nt, "files": nf, "bytes": sz, "cats": cats, "top": best},
 		"requests": map[string]any{"pending_n": len(pr), "pending": reqs},

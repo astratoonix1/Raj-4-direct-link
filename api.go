@@ -16,7 +16,8 @@ type API struct {
 	thumbURL string
 	defQ     string
 	waURL    string
-	extra    func(r *http.Request) map[string]any // accounts / owner jaisi extra config
+	extra    func(r *http.Request) map[string]any   // accounts / owner jaisi extra config
+	onView   func(r *http.Request, titleKey string) // unique viewer ginne ke liye (optional)
 }
 
 func writeJSON(w http.ResponseWriter, v any) {
@@ -74,7 +75,9 @@ func (a *API) Register(mux *http.ServeMux) {
 			return
 		}
 		if id, err := strconv.Atoi(strings.Trim(strings.TrimPrefix(r.URL.Path, "/api/view/"), "/")); err == nil {
-			a.cat.AddView(id)
+			if key := a.cat.AddView(id); key != "" && a.onView != nil {
+				a.onView(r, key)
+			}
 		}
 		w.WriteHeader(http.StatusNoContent)
 	})
