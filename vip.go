@@ -44,11 +44,13 @@ type SubTrack struct {
 }
 
 type vipState struct {
-	ads    AdsCfg
-	subs   map[int][]SubTrack
-	qlock  bool
-	aiOff  bool // AI support band
-	idxOff bool // auto-index band
+	ads     AdsCfg
+	subs    map[int][]SubTrack
+	qlock   bool
+	aiOff   bool        // AI support band
+	idxOff  bool        // auto-index band
+	srcMap  map[int]int // source channel message -> storage message (import yaad)
+	idxLast int         // source channel: yahan tak ke messages dekh liye
 }
 
 // loadVipSetting: Hub load ke time settings docs se (hub.go call karta hai)
@@ -71,6 +73,25 @@ func (h *Hub) loadVipSetting(id string, b []byte) {
 					h.vip.subs[n] = v
 				}
 			}
+		}
+	case "srcmap":
+		var s struct {
+			M map[string]int `json:"m"`
+		}
+		if json.Unmarshal(b, &s) == nil {
+			h.vip.srcMap = make(map[int]int, len(s.M))
+			for k, v := range s.M {
+				if n, err := strconv.Atoi(k); err == nil {
+					h.vip.srcMap[n] = v
+				}
+			}
+		}
+	case "idxsync":
+		var s struct {
+			Last int `json:"last"`
+		}
+		if json.Unmarshal(b, &s) == nil {
+			h.vip.idxLast = s.Last
 		}
 	case "idx":
 		var s struct {

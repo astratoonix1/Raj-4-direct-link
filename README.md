@@ -327,12 +327,20 @@ User site par kuch search kare (ya movie **request** kare) aur wo site par na ho
 - Jo files ka TMDB match nahi milta wo "Other" mein jaati hain (jaise bot upload mein) aur tumhe bot mein ⚠️ ke saath bataya jata hai, `/fix` se theek karo.
 - Har nayi index hui file ka summary tumhe bot mein aata hai.
 
+**Do tarike (channel ke hisaab se):**
+1. *Files storage channel (`CHANNEL_ID`) mein hi hain* → sirf `TG_STRING_SESSION` chahiye. Search wahin hoti hai.
+2. *Files alag PRIVATE source channel mein hain* → `SOURCE_CHANNEL_ID` bhi daalo (jaise `-1001234567890`). Site us source channel mein search karti hai, mili files ko apne **storage channel mein copy** karti hai (forward, "forwarded from" ke bina) aur wahin se index + stream karti hai. **Kaunsi file pehle copy ho chuki wo hamesha yaad rehti hai**, to dobara copy nahi hoti (admin ne site se hata di ho tab bhi nahi). Saath mein har **15 minute** (`IDX_SYNC_MINUTES`) mein source channel ke **naye** messages apne-aap khinch kar index ho jaate hain (pehli baar purani history nahi khinchti, sirf "yahan tak dekha" yaad karta hai; purani files search karne par aati hain). Naye episode alert aur request notice bhi isi se chalte hain. `/idxsync` se abhi turant sync karo.
+   - Naya account **source channel mein member** ho aur **storage channel mein admin (post karne ka haq)**. Dono channel private hi rahenge.
+   - Source channel mein **"Restrict saving content"** band hona chahiye, nahi to Telegram forward rok deta hai.
+
 **Limits (Telegram account ki suraksha ke liye):** ek hi naam ka result 30 minute cache hota hai, ek saath wahi search ek hi baar chalti hai, poori site par max 12 channel-search/minute, har user/guest 8/ghanta, har IP 20/ghanta.
 
 **Setup (env):**
 | Variable | Kya |
 |---|---|
 | `TG_STRING_SESSION` | **Telethon StringSession** (naye alag Telegram account ka) |
+| `SOURCE_CHANNEL_ID` | optional, jahan files pade hain wo private channel (tarika 2) |
+| `IDX_SYNC_MINUTES` | optional, source ke naye messages kitne minute mein dekhe (default 15) |
 | `TG_CHANNEL_USERNAME` | optional, sirf agar storage channel public hai (nahi to account ke chats se CHANNEL_ID dhundha jata hai) |
 | `API_ID`, `API_HASH`, `CHANNEL_ID` | pehle se hain, wahi chalenge |
 
@@ -346,11 +354,11 @@ with TelegramClient(StringSession(), API_ID, API_HASH) as c:
 ```
 ⚠️ **Zaroori:**
 1. **Naya alag Telegram account** (nayi SIM/number) use karo, apna personal nahi. String session = us account ka password.
-2. Us account ko storage channel mein **member** banao.
+2. Us account ko channel mein jodo (tarika 1: storage channel mein member; tarika 2: source mein member + storage mein admin).
 3. Ye session **sirf yahin** use hoga. Apne Telethon userbot ke saath **same session mat chalao**, nahi to Telegram dono ko logout kar sakta hai (`AUTH_KEY_DUPLICATED`). Naya login karke naya session banao.
 4. Session sirf Koyeb env mein rakho, GitHub/chat mein kabhi nahi.
 
-**Bot commands:** `/idx` (haal), `/idxon`, `/idxoff`, `/idxscan <naam>` (abhi channel mein dhundho, jaise `/idxscan raj`).
+**Bot commands:** `/idx` (haal), `/idxon`, `/idxoff`, `/idxscan <naam>` (abhi channel mein dhundho, jaise `/idxscan raj`), `/idxsync` (source ke naye messages abhi khincho).
 Bina `TG_STRING_SESSION` ke ye feature band rehta hai, baaki site waise hi chalti hai.
 
 ## 🆕 Naya Episode Alert, 📊 Dashboard, 📲 PWA

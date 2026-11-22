@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -25,7 +26,13 @@ type ChanMsg struct {
 
 type ChanSearcher interface {
 	Ready() bool
+	// SourceMode: true ho to files alag SOURCE channel mein hain; unhe storage channel mein copy (forward) karke index karte hain.
+	SourceMode() bool
 	Search(ctx context.Context, q string, limit int) ([]ChanMsg, error)
+	// Import: (source mode) source ke message IDs ko storage channel mein copy karo -> srcID -> storage message ID
+	Import(ctx context.Context, srcIDs []int) (map[int]int, error)
+	// NewSince: (source mode) afterID ke baad ke naye media messages aur channel ka current top message ID
+	NewSince(ctx context.Context, afterID int) ([]ChanMsg, int, error)
 }
 
 type IdxReport struct {
@@ -199,16 +206,72 @@ func (x *AutoIndexer) Discover(ctx context.Context, query string) (*IdxReport, e
 	sort.Slice(msgs, func(i, j int) bool { return msgs[i].ID < msgs[j].ID }) // purani pehle: episode kram mein
 
 	rep := &IdxReport{Query: strings.TrimSpace(query), Found: len(msgs), Titles: map[string]int{}}
+	var fresh []ChanMsg
 	for _, m := range msgs {
-		if x.cat.File(m.ID) != nil {
+		if x.known(m.ID) {
 			rep.Already++
 			continue
 		}
-		if rep.Added >= idxMaxFiles {
+		if len(fresh) >= idxMaxFiles {
 			break
 		}
+		fresh = append(fresh, m)
+	}
+	if err := x.indexNew(ctx, fresh, rep); err != nil && rep.Added == 0 {
+		return nil, herr(502, "Files channel se la nahi paya, thodi der baad try karo.")
+	}
+	x.mu.Lock()
+	x.cache[key] = idxCached{rep: rep, at: time.Now()}
+	if len(x.cache) > 500 {
+		x.cache = map[string]idxCached{key: x.cache[key]}
+	}
+	x.mu.Unlock()
+	if rep.Added > 0 && x.notify != nil {
+		x.notify(rep.Summary("🔎 Auto-index"))
+	}
+	out := *rep
+	return &out, nil
+}
+
+// known: ye file pehle se site par hai (ya source se pehle import ho chuki hai)?
+func (x *AutoIndexer) known(id int) bool {
+	if x.s.SourceMode() {
+		_, ok := x.hub.SrcMapped(id) // import ho chuki: dobara nahi (admin ne hata di ho tab bhi)
+		return ok
+	}
+	return x.cat.File(id) != nil
+}
+
+// indexNew: nayi files ko (source mode mein pehle storage channel mein copy karke) catalog mein daalo.
+func (x *AutoIndexer) indexNew(ctx context.Context, fresh []ChanMsg, rep *IdxReport) error {
+	if len(fresh) == 0 {
+		return nil
+	}
+	ids := map[int]int{} // channel message id -> storage message id (FileDoc ID)
+	var impErr error
+	if x.s.SourceMode() {
+		list := make([]int, 0, len(fresh))
+		for _, m := range fresh {
+			list = append(list, m.ID)
+		}
+		got, err := x.s.Import(ctx, list)
+		impErr = err
+		if len(got) > 0 {
+			x.hub.SrcMapAdd(got)
+		}
+		ids = got
+	} else {
+		for _, m := range fresh {
+			ids[m.ID] = m.ID
+		}
+	}
+	for _, m := range fresh {
+		fid, ok := ids[m.ID]
+		if !ok {
+			continue
+		}
 		q, rk := detectQuality(m.Name)
-		f := &FileDoc{ID: m.ID, Name: m.Name, Size: m.Size, Quality: q, QRank: rk, Created: time.Now()}
+		f := &FileDoc{ID: fid, Name: m.Name, Size: m.Size, Quality: q, QRank: rk, Created: time.Now()}
 		if err := x.cat.AddFile(ctx, f); err != nil {
 			continue
 		}
@@ -224,17 +287,69 @@ func (x *AutoIndexer) Discover(ctx context.Context, query string) (*IdxReport, e
 			rep.Others++
 		}
 	}
-	x.mu.Lock()
-	x.cache[key] = idxCached{rep: rep, at: time.Now()}
-	if len(x.cache) > 500 {
-		x.cache = map[string]idxCached{key: x.cache[key]}
+	return impErr
+}
+
+// SyncOnce: (source mode) source channel mein jo naye messages aaye unhe import+index karo.
+// Pehli baar sirf "yahan tak dekh liya" yaad karta hai (purani poori history nahi khinchta).
+func (x *AutoIndexer) SyncOnce(ctx context.Context) (*IdxReport, error) {
+	if x == nil || !x.s.SourceMode() || !x.hub.IdxEnabled() || !x.s.Ready() {
+		return nil, nil
 	}
-	x.mu.Unlock()
+	last := x.hub.IdxLast()
+	msgs, top, err := x.s.NewSince(ctx, last)
+	if err != nil {
+		return nil, err
+	}
+	if last == 0 {
+		x.hub.SetIdxLast(top)
+		return &IdxReport{Query: "sync shuru", Titles: map[string]int{}}, nil
+	}
+	sort.Slice(msgs, func(i, j int) bool { return msgs[i].ID < msgs[j].ID })
+	rep := &IdxReport{Query: "naye messages", Titles: map[string]int{}}
+	var fresh []ChanMsg
+	for _, m := range msgs {
+		if !isVideoName(m.Name) {
+			continue
+		}
+		rep.Found++
+		if x.known(m.ID) {
+			rep.Already++
+			continue
+		}
+		fresh = append(fresh, m)
+		if len(fresh) >= 40 {
+			break
+		}
+	}
+	err = x.indexNew(ctx, fresh, rep)
+	if err == nil && top > last && len(fresh) < 40 {
+		x.hub.SetIdxLast(top) // 40 se zyada hon to agli baar baaki uthayenge
+	} else if len(fresh) > 0 {
+		x.hub.SetIdxLast(fresh[len(fresh)-1].ID)
+	}
 	if rep.Added > 0 && x.notify != nil {
-		x.notify(rep.Summary("🔎 Auto-index"))
+		x.notify(rep.Summary("🔄 Auto-sync (source channel)"))
 	}
-	out := *rep
-	return &out, nil
+	return rep, err
+}
+
+// StartSync: har `every` par SyncOnce chalao (source mode mein)
+func (x *AutoIndexer) StartSync(every time.Duration) {
+	if x == nil || every <= 0 {
+		return
+	}
+	go func() {
+		time.Sleep(time.Minute) // user session ready hone do
+		t := time.NewTicker(every)
+		defer t.Stop()
+		for {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+			x.SyncOnce(ctx)
+			cancel()
+			<-t.C
+		}
+	}()
 }
 
 // Summary: admin ke liye chhota report
@@ -274,7 +389,44 @@ func (x *AutoIndexer) OnRequest(r *Request) {
 	}()
 }
 
-// ---------- settings (on/off) ----------
+// ---------- settings (on/off), source map, sync pointer ----------
+
+func (h *Hub) SrcMapped(srcID int) (int, bool) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	v, ok := h.vip.srcMap[srcID]
+	return v, ok
+}
+
+// SrcMapAdd: source message -> storage message (hamesha ke liye yaad)
+func (h *Hub) SrcMapAdd(m map[int]int) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if h.vip.srcMap == nil {
+		h.vip.srcMap = map[int]int{}
+	}
+	for k, v := range m {
+		h.vip.srcMap[k] = v
+	}
+	doc := make(map[string]int, len(h.vip.srcMap))
+	for k, v := range h.vip.srcMap {
+		doc[strconv.Itoa(k)] = v
+	}
+	h.put(cSettings, "srcmap", map[string]any{"m": doc})
+}
+
+func (h *Hub) IdxLast() int {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return h.vip.idxLast
+}
+
+func (h *Hub) SetIdxLast(n int) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.vip.idxLast = n
+	h.put(cSettings, "idxsync", map[string]int{"last": n})
+}
 
 func (h *Hub) IdxEnabled() bool {
 	h.mu.Lock()
@@ -342,7 +494,11 @@ func (a *App) idxCommand(m *tgbotapi.Message, arg string) bool {
 				sess = "✅ User session connected"
 			}
 		}
-		a.send(chat, "🔎 AUTO-INDEX: "+on+"\n"+sess+"\n\nJab user search/request kare aur file site par na ho, to storage channel mein dhundh kar index ho jaati hai.\n\n/idxon — chalu\n/idxoff — band\n/idxscan <naam> — abhi channel mein dhundho (jaise /idxscan raj)")
+		mode := "Mode: storage channel mein seedha search"
+		if a.idx != nil && a.idx.s.SourceMode() {
+			mode = fmt.Sprintf("Mode: SOURCE channel → storage channel mein copy. Yaad: %d file, sync pointer: %d", len(a.hub.srcMapCopy()), a.hub.IdxLast())
+		}
+		a.send(chat, "🔎 AUTO-INDEX: "+on+"\n"+sess+"\n"+mode+"\n\nJab user search/request kare aur file site par na ho, to storage channel mein dhundh kar index ho jaati hai.\n\n/idxon — chalu\n/idxoff — band\n/idxscan <naam> — abhi channel mein dhundho (jaise /idxscan raj)\n/idxsync — source channel ke naye messages abhi khincho")
 	case "idxscan":
 		if a.idx == nil {
 			a.send(chat, "❌ TG_STRING_SESSION set nahi hai.")
@@ -372,8 +528,37 @@ func (a *App) idxCommand(m *tgbotapi.Message, arg string) bool {
 				a.send(chat, rep.Summary("✅ Scan poora"))
 			}
 		}(strings.TrimSpace(arg))
+	case "idxsync":
+		if a.idx == nil || !a.idx.s.SourceMode() {
+			a.send(chat, "❌ SOURCE_CHANNEL_ID set nahi hai (sync sirf source channel mode mein hota hai).")
+			return true
+		}
+		a.send(chat, "🔄 Source channel ke naye messages dekh raha hun…")
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+			defer cancel()
+			rep, err := a.idx.SyncOnce(ctx)
+			switch {
+			case err != nil:
+				a.send(chat, "❌ "+err.Error())
+			case rep == nil:
+				a.send(chat, "ℹ️ Sync abhi nahi ho sakta (auto-index band ya session ready nahi).")
+			case rep.Added == 0:
+				a.send(chat, "ℹ️ Koi nayi file nahi mili.")
+			}
+		}()
 	default:
 		return false
 	}
 	return true
+}
+
+func (h *Hub) srcMapCopy() map[int]int {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	out := make(map[int]int, len(h.vip.srcMap))
+	for k, v := range h.vip.srcMap {
+		out[k] = v
+	}
+	return out
 }

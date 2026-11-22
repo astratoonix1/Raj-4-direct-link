@@ -87,6 +87,8 @@ type Config struct {
 	GeminiModel     string
 	TGStringSession string // user session (auto-index ke liye), optional
 	TGChannelUser   string // optional: public channel ka username
+	SourceChannelID int64  // optional: files jahan pade hain (private); storage channel mein copy hoti hain
+	IdxSyncMin      int    // source channel ke naye messages kitne minute mein dekhe (0 = band)
 	PayUPI          string
 	PremiumFrom     int
 	PremiumOn       bool
@@ -202,6 +204,12 @@ func loadConfig() (*Config, error) {
 	cfg.GeminiModel = os.Getenv("GEMINI_MODEL")
 	cfg.TGStringSession = strings.TrimSpace(os.Getenv("TG_STRING_SESSION"))
 	cfg.TGChannelUser = strings.TrimSpace(os.Getenv("TG_CHANNEL_USERNAME"))
+	if v := strings.TrimSpace(os.Getenv("SOURCE_CHANNEL_ID")); v != "" {
+		if n, err := strconv.ParseInt(v, 10, 64); err == nil {
+			cfg.SourceChannelID = n
+		}
+	}
+	cfg.IdxSyncMin = envInt("IDX_SYNC_MINUTES", 15)
 	cfg.AdminEmails = map[string]bool{}
 	for _, e := range strings.FieldsFunc(os.Getenv("ADMIN_EMAILS"), func(r rune) bool { return r == ',' || r == ' ' || r == ';' }) {
 		if e = strings.ToLower(strings.TrimSpace(e)); e != "" {
@@ -1486,7 +1494,7 @@ func (a *App) onCommand(ctx context.Context, m *tgbotapi.Message) {
 			"/ai — haal, /aion, /aioff — Contact Owner chat mein AI assistant\n"+
 			"(Admin Agent chat: site ke ⋮ menu → 🤖 Agent, env GEMINI_API_KEY + ADMIN_EMAILS)\n\n"+
 			"🔎 AUTO-INDEX (channel se)\n"+
-			"/idx — haal, /idxon, /idxoff, /idxscan <naam> — channel mein dhundh kar index karo\n"+
+			"/idx — haal, /idxon, /idxoff, /idxscan <naam>, /idxsync — channel se dhundh kar index karo\n"+
 			"(env TG_STRING_SESSION; user search/request par file apne-aap site par aa jaati hai)\n\n"+
 			"🎞 QUALITY & SUBTITLES\n"+
 			"/qualitylock on|off — free users 480p tak, 720p+ sirf VIP (premium system ON ho tab)\n"+
@@ -1785,7 +1793,10 @@ func main() {
 			app.notifyRequest(r)
 			app.idx.OnRequest(r)
 		}
-		logger.Info("auto-index chalu (TG_STRING_SESSION mila)")
+		if cfg.SourceChannelID != 0 {
+			app.idx.StartSync(time.Duration(cfg.IdxSyncMin) * time.Minute)
+		}
+		logger.Info("auto-index chalu (TG_STRING_SESSION mila)", zap.Bool("source_mode", cfg.SourceChannelID != 0))
 	} else {
 		logger.Info("TG_STRING_SESSION nahi hai — auto-index band")
 	}
