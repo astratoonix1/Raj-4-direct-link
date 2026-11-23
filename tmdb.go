@@ -82,6 +82,23 @@ func detectQuality(name string) (string, int) {
 func atoi(s string) int { n, _ := strconv.Atoi(s); return n }
 
 // parseName "Avengers.Endgame.2019.1080p.mkv" -> {Title:"Avengers Endgame", Year:2019, ...}
+var reEpRange = regexp.MustCompile(`(?i)\b(?:s\d{1,2}\s*)?(?:episodes?|eps?|e)\.?\s*(\d{1,3})\s*(?:-|–|—|~|to|&)\s*(?:episodes?|eps?|e)?\.?\s*(\d{1,3})\b`)
+
+// epRange: "E01-E09", "S01E01-09", "Episodes 1 to 9" jaise naam se (shuru, aakhir). Nahi mila to 0,0.
+func epRange(name string) (int, int) {
+	s := reExt.ReplaceAllString(strings.TrimSpace(name), "")
+	s = strings.Join(strings.Fields(reSep.ReplaceAllString(s, " ")), " ")
+	m := reEpRange.FindStringSubmatch(s)
+	if m == nil {
+		return 0, 0
+	}
+	a, b := atoi(m[1]), atoi(m[2])
+	if a < 1 || b <= a || b-a > 300 {
+		return 0, 0
+	}
+	return a, b
+}
+
 func parseName(name string) ParsedName {
 	var pn ParsedName
 	pn.Quality, pn.QRank = detectQuality(name)

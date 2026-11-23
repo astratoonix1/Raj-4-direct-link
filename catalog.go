@@ -640,6 +640,7 @@ type Entry struct {
 	Season  int        `json:"season"`
 	Episode int        `json:"episode"`
 	Part    int        `json:"part,omitempty"`
+	EpEnd   int        `json:"ep_end,omitempty"` // pack file: Episode se EpEnd tak (E01-E09)
 	Label   string     `json:"label"`
 	Files   []FileLite `json:"files"` // sabse achhi quality pehle
 }
@@ -661,9 +662,24 @@ type TitleView struct {
 	Views   int        `json:"views"`
 }
 
+// fileEpEnd: file ke naam mein episode range ho (E01-E09) to aakhri episode, warna 0.
+func fileEpEnd(f *FileDoc) int {
+	if f == nil || f.Episode < 1 {
+		return 0
+	}
+	a, b := epRange(f.Name)
+	if a == f.Episode && b > a {
+		return b
+	}
+	return 0
+}
+
 func entryLabel(t *TitleDoc, f *FileDoc) string {
 	switch {
 	case f.Season > 0 && f.Episode > 0:
+		if end := fileEpEnd(f); end > 0 {
+			return fmt.Sprintf("S%02d E%02d–E%02d", f.Season, f.Episode, end)
+		}
 		return fmt.Sprintf("S%02d E%02d", f.Season, f.Episode)
 	case f.Season > 0:
 		return fmt.Sprintf("Season %d", f.Season)
@@ -683,17 +699,17 @@ func (c *Catalog) entries(t *TitleDoc) []Entry {
 			fs = append(fs, f)
 		}
 	}
-	type k struct{ s, e, p int }
+	type k struct{ s, e, p, x int }
 	groups := map[k]*Entry{}
 	var order []k
 	for _, f := range fs {
-		key := k{f.Season, f.Episode, 0}
+		key := k{f.Season, f.Episode, 0, fileEpEnd(f)}
 		if f.Season == 0 && f.Episode == 0 {
 			key.p = f.Part
 		}
 		en := groups[key]
 		if en == nil {
-			en = &Entry{Season: f.Season, Episode: f.Episode, Part: key.p, Label: entryLabel(t, f)}
+			en = &Entry{Season: f.Season, Episode: f.Episode, Part: key.p, EpEnd: key.x, Label: entryLabel(t, f)}
 			groups[key] = en
 			order = append(order, key)
 		}
@@ -707,7 +723,10 @@ func (c *Catalog) entries(t *TitleDoc) []Entry {
 		if a.e != b.e {
 			return a.e < b.e
 		}
-		return a.p < b.p
+		if a.p != b.p {
+			return a.p < b.p
+		}
+		return a.x < b.x
 	})
 	out := make([]Entry, 0, len(order))
 	for _, key := range order {

@@ -167,12 +167,28 @@ select.sel{background:var(--bg3);color:#fff;border:1px solid var(--line);border-
 .cast img{width:100%;height:100%;object-fit:cover}
 .cast b{display:block;font-size:.8rem;line-height:1.2}
 .cast span{display:block;font-size:.72rem;color:var(--mut);line-height:1.2}
-.seasons{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.seasons{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.sbox{background:linear-gradient(135deg,rgba(139,92,246,.14),rgba(34,211,238,.10));border:1px solid rgba(139,92,246,.4);border-radius:14px;padding:14px 14px 6px;margin-bottom:14px}
+.sbox .shd{font-weight:800;font-size:.95rem;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sbox .shd small{font-weight:500;color:var(--mut);font-size:.76rem}
+.schip{flex:1 1 130px;max-width:230px;text-align:left;background:#15151d;border:2px solid #34343f;border-radius:12px;color:#ddd;padding:10px 14px;cursor:pointer;font:inherit;transition:transform .15s,border-color .2s,background .2s}
+.schip b{display:block;font-size:1rem}
+.schip span{display:block;font-size:.74rem;color:var(--mut);margin-top:2px}
+.schip:hover{border-color:#8b5cf6;transform:translateY(-2px)}
+.schip.on{background:linear-gradient(135deg,#8b5cf6,#22d3ee);border-color:transparent;color:#fff;box-shadow:0 6px 18px rgba(139,92,246,.35)}
+.schip.on span{color:rgba(255,255,255,.88)}
+.ssum{margin:2px 0 12px;font-size:.84rem;color:#cfd0dc;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.ssum b{color:#fff}
+.ep .lb .erng{display:block;width:max-content;max-width:100%}
+.q{white-space:nowrap}
+.ep .qs{margin-left:auto}
+@media(max-width:600px){.ep{flex-wrap:wrap}.ep .nm{display:none}.ep .qs{width:100%;margin-left:48px}}
+.erng{display:inline-block;background:rgba(34,211,238,.14);border:1px solid rgba(34,211,238,.5);color:#7fe9ff;border-radius:999px;padding:2px 10px;font-size:.72rem;font-weight:700;white-space:nowrap}
 .ep{display:flex;align-items:center;gap:14px;background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:8px;transition:background .2s,border-color .2s;cursor:pointer}
 .ep:hover{background:var(--bg3);border-color:#444}
 .ep .pn{width:34px;height:34px;border-radius:50%;background:var(--red);display:grid;place-items:center;flex:none}
 .ep .pn svg{width:15px;height:15px;fill:#fff}
-.ep .lb{font-weight:700;min-width:70px}
+.ep .lb{font-weight:700;min-width:70px;flex:none}
 .ep .nm{flex:1;color:var(--mut);font-size:.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .qs{display:flex;gap:6px;flex-wrap:wrap}
 .q{background:#000;border:1px solid #555;border-radius:4px;padding:3px 9px;font-size:.76rem;color:#eee}
@@ -1095,7 +1111,12 @@ function renderTitle(key){
     var snums=Object.keys(seasons).map(Number).sort(function(a,b){return a-b});
     var multi=entries.length>1||(entries[0]&&entries[0].label);
     h+='<h3>'+(entries.length>1?(t.kind==='movie'?'Files':'Episodes'):'Watch')+'</h3>';
-    if(snums.length>1||(snums.length===1&&snums[0]>0&&entries.length>1))h+='<div class="seasons" id="ssn">'+snums.map(function(s,i){return '<button class="fchip'+(i?'':' on')+'" data-s="'+s+'">'+(s?'Season '+s:'Other')+'</button>'}).join('')+'</div>';
+    var hasS=snums.length>1||(snums.length===1&&snums[0]>0&&entries.length>1);
+    function covText(list){var set={};list.forEach(function(e){if(e.episode>0){var b=e.ep_end>e.episode?e.ep_end:e.episode;for(var i=e.episode;i<=b;i++)set[i]=1}});
+      var n=Object.keys(set).map(Number).sort(function(a,b){return a-b}),out=[],i=0;
+      while(i<n.length){var j=i;while(j+1<n.length&&n[j+1]===n[j]+1)j++;out.push(n[i]===n[j]?'E'+n[i]:'E'+n[i]+'–E'+n[j]);i=j+1}
+      return out.join(', ')}
+    if(hasS)h+='<div class="sbox"><div class="shd">📺 Seasons <small>👇 Season chuno, phir episode par click karo</small></div><div class="seasons" id="ssn">'+snums.map(function(s,i){var l=seasons[s],cv=covText(l);return '<button class="schip'+(i?'':' on')+'" data-s="'+s+'"><b>'+(s?'Season '+s:'Other')+'</b><span>'+(cv||l.length+' file'+(l.length>1?'s':''))+'</span></button>'}).join('')+'</div></div><div class="ssum" id="ssum"></div>';
     h+='<div id="eps"></div>';
     if(d.parts&&d.parts.length){reg([]);h+='<h3>'+esc(t.collection_name||'More parts')+'</h3><div class="track-wrap"><div class="track" style="padding-left:0;padding-right:0">'+d.parts.map(function(p){
       var c={key:p.key||'',title:p.title,year:p.year,poster:p.poster,category:'Movie'};if(p.key)cardData[p.key]=c;
@@ -1105,14 +1126,15 @@ function renderTitle(key){
     app.innerHTML=h;window.scrollTo(0,0);document.title=t.title+' — '+SITE;
     function paintEps(s){
       var list=(seasons[s]||entries);
+      var sm=$('#ssum');if(sm){var cv=covText(list);sm.innerHTML=(s?'<b>Season '+s+'</b>':'<b>Files</b>')+' · '+list.length+' item'+(list.length>1?'s':'')+(cv?' · <span class="erng">Episodes: '+esc(cv)+'</span>':'')}
       $('#eps').innerHTML=list.map(function(e){
         var pf=pickF(e.files);
-        return '<div class="ep" data-fid="'+pf.id+'"><div class="pn">'+ICON.play+'</div><div class="lb">'+esc(e.label||t.title)+'</div><div class="nm">'+esc(pf.name)+'</div><div class="qs">'+
+        return '<div class="ep" data-fid="'+pf.id+'"><div class="pn">'+ICON.play+'</div><div class="lb">'+esc(e.label||t.title)+(e.ep_end>e.episode?'<div class="erng" style="margin-top:4px">📦 Episode '+e.episode+' se '+e.ep_end+' tak</div>':'')+'</div><div class="nm">'+esc(pf.name)+'</div><div class="qs">'+
           e.files.map(function(f){return '<button class="q" data-fid="'+f.id+'" title="'+esc(fmtSize(f.size))+'">'+esc(f.quality)+(f.size?' · '+esc(fmtSize(f.size)):'')+'</button>'}).join('')+'</div></div>'}).join('');
     }
-    paintEps(snums.length>1||(snums.length===1&&snums[0]>0&&entries.length>1)?snums[0]:undefined);
+    paintEps(hasS?snums[0]:undefined);
     $('#eps').onclick=function(e){var q=e.target.closest('.q'),ep=e.target.closest('.ep');if((q||ep)&&locked(t)){goPremium();return}if(q){location.href='/w/'+q.getAttribute('data-fid');return}if(ep)location.href='/w/'+ep.getAttribute('data-fid')};
-    var ssn=$('#ssn');if(ssn)ssn.onclick=function(e){var b=e.target.closest('.fchip');if(!b)return;$$('.fchip',ssn).forEach(function(x){x.classList.toggle('on',x===b)});paintEps(+b.getAttribute('data-s'))};
+    var ssn=$('#ssn');if(ssn)ssn.onclick=function(e){var b=e.target.closest('.schip');if(!b)return;$$('.schip',ssn).forEach(function(x){x.classList.toggle('on',x===b)});paintEps(+b.getAttribute('data-s'))};
     var dp=$('#dp');if(dp)dp.onclick=function(){if(locked(t)){goPremium();return}location.href='/w/'+playId};
     $('#dl').onclick=function(){var on=toggleList(t);this.classList.toggle('on',on);this.innerHTML=(on?ICON.check:ICON.plus)+' My List'};
     $('#dk').onclick=function(){var on=toggleLike(key);this.classList.toggle('on',on);toast(on?'Liked 👍':'Like removed')};
