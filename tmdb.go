@@ -30,7 +30,7 @@ const (
 
 var (
 	reExt      = regexp.MustCompile(`(?i)\.(mkv|mp4|avi|mov|webm|m4v|ts|flv|mp3|m4a)$`)
-	rePrefix   = regexp.MustCompile(`(?i)^(?:\s*\[[^\]]*\]|\s*\{[^}]*\}|\s*@\w+|\s*www\.[^\s]+\s*[-–]?)+`)
+	rePrefix   = regexp.MustCompile(`(?i)^(?:\s*\[[^\]]*\]|\s*\{[^}]*\}|\s*@[a-z0-9]+(?:[_.\-](?:movies?|hub|hd|official|world|zone|cinemas?|films?|series|store|channel|bots?|dl|club|tv|network|backup|new|premium)(?:[_.\-]|$))*|\s*www\.[^\s]+\s*[-–]?)+`)
 	reSep      = regexp.MustCompile(`[._\[\]{}()]+`)
 	reYear     = regexp.MustCompile(`\b(?:19|20)\d{2}\b`)
 	reNoise    = regexp.MustCompile(`(?i)\b(?:\d{3,4}p|4k|uhd|hdtc|hdcam|hdts|hdrip|camrip|cam|dvdscr|dvdrip|webrip|web-?dl|web|blu-?ray|brrip|bdrip|hdtv|hindi|english|tamil|telugu|malayalam|kannada|bengali|punjabi|japanese|korean|dual|multi|audio|dubbed|subbed|esubs?|subs?|x26[45]|h\.?26[45]|hevc|10bit|aac|ac3|ddp?\d?|atmos|yts|rarbg|extended|uncut|proper|remastered|complete|nf|amzn|zee5|hotstar|org)\b`)

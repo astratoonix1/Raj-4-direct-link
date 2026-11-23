@@ -78,9 +78,29 @@ func (p *Pipeline) Process(ctx context.Context, fileID int) (*Result, error) {
 			}
 		}
 	}
-	// 2) TMDB
+	// 2) TMDB (naam "@channel_Movie_Name" jaisa ho aur channel naam mein "_" ho to pehla shabd hata kar ek aur koshish)
 	if p.tmdb.Enabled() {
-		if kind, id, ok := p.tmdb.FindMatch(ctx, pn); ok {
+		variants := []ParsedName{pn}
+		if strings.HasPrefix(strings.TrimSpace(f.Name), "@") {
+			if w := strings.Fields(pn.Title); len(w) >= 3 {
+				v := pn
+				v.Title = strings.Join(w[1:], " ")
+				variants = append(variants, v)
+			}
+		}
+		for vi, vp := range variants {
+			vak := aliasKey(vp)
+			if vi > 0 && vak != "" {
+				if key, ok := p.cat.FindAlias(vak); ok {
+					if t := p.cat.Title(key); t != nil {
+						return p.finish(ctx, f, t, season, episode, part, true)
+					}
+				}
+			}
+			kind, id, ok := p.tmdb.FindMatch(ctx, vp)
+			if !ok {
+				continue
+			}
 			key := fmt.Sprintf("%s:%d", kind, id)
 			t := p.cat.Title(key)
 			if t == nil {
@@ -88,14 +108,14 @@ func (p *Pipeline) Process(ctx context.Context, fileID int) (*Result, error) {
 				td, err := p.tmdb.FetchTitle(fctx, kind, id)
 				cancel()
 				if err == nil {
-					td.Aliases = []string{ak}
+					td.Aliases = []string{vak}
 					if err := p.cat.UpsertTitle(ctx, td); err != nil {
 						return nil, err
 					}
 					t = p.cat.Title(key)
 				}
-			} else if ak != "" {
-				p.cat.AddAlias(ctx, key, ak)
+			} else if vak != "" {
+				p.cat.AddAlias(ctx, key, vak)
 			}
 			if t != nil {
 				return p.finish(ctx, f, t, season, episode, part, true)
