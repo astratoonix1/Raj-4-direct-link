@@ -1229,7 +1229,7 @@ func (a *App) onCallback(cq *tgbotapi.CallbackQuery) {
 		a.bot.Request(tgbotapi.NewCallback(cq.ID, "Sirf admin"))
 		return
 	}
-	if a.hubCallback(cq) {
+	if a.helpCallback(cq) || a.hubCallback(cq) {
 		return
 	}
 	ctx := context.Background()
@@ -1433,79 +1433,7 @@ func (a *App) onCommand(ctx context.Context, m *tgbotapi.Message) {
 	}
 	switch m.Command() {
 	case "start", "help":
-		a.send(chat, "👋 Admin panel — ye bot tumhari site ka remote control hai.\n\n"+
-			"📤 UPLOAD\n"+
-			"Koi video ya file bhejo → main naam padhkar TMDB se title dhoondhta hoon, sahi category mein daalta hoon aur link deta hoon. Kai files ek saath bhejo toh ek hi message aata hai.\n\n"+
-			"🎬 TITLES & FILES\n"+
-			"/list — saare titles, har ek ke saath 🗑 delete\n"+
-			"/others — jinka TMDB match nahi mila (5-5 karke)\n"+
-			"/delothers [n] — sabse naye n Other files hatao (default 5), /delothers all = sab Other\n"+
-			"/fix <id> <tmdb link> — galat title theek karo\n"+
-			"   jaise: /fix 123 https://www.themoviedb.org/movie/603\n"+
-			"/cat <id> movie|series|anime|cartoon|other — category badlo\n"+
-			"/thumb <id> <image url> — apna poster lagao (/thumb <id> off = hatao)\n"+
-			"/retry — Other ki files dobara TMDB se milao\n"+
-			"/del <id> — ek file hatao\n"+
-			"/deltitle <id> — us title ki saari files hatao\n"+
-			"/deleteall — SAB kuch hatao (confirm ke baad)\n"+
-			"/link <id> — link dobara\n"+
-			"/stats — kitna kya hai\n"+
-			"/tmdb — TMDB connect hai ya nahi\n"+
-			"/id — apna Telegram ID\n\n"+
-			"(<id> = bot ke message mein likha 🆔 number)\n\n"+
-			"⬇️ Users, premium, ad, updates ki list neeche dusre message mein hai.")
-		a.send(chat, "👥 USERS\n"+
-			"/users — saare users (🚫 block, ✅ unblock, 🗑 delete)\n"+
-			"/user <email ya id> — ek user ki detail\n"+
-			"/visitors — abhi kitne log site par, aaj, 7 din, guest vs account\n"+
-			"/guests — bina login wale devices (kab aaye) + 🚫 Block / 💬 Message button\n"+
-			"/blocked — block hue users + devices: kab block hua, kab khulega, ✅ Unblock, 💬 Message\n"+
-			"Time ke saath block: /block <email/NX ID> 7d, /blockdev <code> 12h (30m, 12h, 7d, 2w). Time nahi diya toh hamesha.\n"+
-			"/blockdev <device code> — us device ko block (site par kuch nahi dikhega), /unblockdev <code>\n"+
-			"Har user ka ID NX123456 jaisa hota hai: /user, /block, /deluser mein ye ID ya email dono chalte hain.\n"+
-			"/block /unblock /deluser <email ya id> (ya 🧵 message ko Reply karke sirf /block)\n"+
-			"/setemail <email ya id> <naya email> — galat email theek karo\n\n"+
-			"💬 MESSAGES & UPDATES\n"+
-			"/requests — pending movie/series requests (✅ ⏳ ❌)\n"+
-			"/broadcast <text> — site par sabko update (🔔)\n"+
-			"/updates — purane updates (🗑 se hatao)\n"+
-			"/clearbell — 🔔 ke messages saaf: auto status / sab bell / poori chat (user ke messages samet)\n"+
-			"User ke message ko Reply karo → jawab site par dikhta hai.\n\n"+
-			"👑 PREMIUM\n"+
-			"/premiumon, /premiumoff — poora premium system chalu / band (turant)\n"+
-			"/premium — abhi ka haal + rule\n"+
-			"/premium <file id> on|off|auto — ek title hamesha premium / hamesha free / saal ke rule par\n"+
-			"/premiumlist — premium titles ki list\n"+
-			"/code <mahine> [kitne] — redeem code banao, jaise /code 1 5\n"+
-			"/codes — unused codes, /subs — premium users\n"+
-			"/grant <email ya id> <mahine> — seedha premium do\n"+
-			"/revoke <email ya id> — premium hatao\n"+
-			"/payments — pending payments (✅ Approve / ❌ Reject)\n\n"+
-			"🔵 VIP & BLUE TICK\n"+
-			"/vip <email ya NX ID> — hamesha ka VIP (720p/1080p/4K + no ads + 🔵 tick), /unvip\n"+
-			"/verify <email ya NX ID> — sirf 🔵 Blue Tick, /unverify\n"+
-			"/vips — VIP aur Blue Tick wale sab\n"+
-			"(Site admin accounts ke liye env ADMIN_EMAILS)\n\n"+
-			"📺 ADSTERRA ADS (VIP/admin ko nahi dikhte)\n"+
-			"/ads — haal\n"+
-			"/adsbanner <code> — banner code, /adspop <code> — popunder/social bar code\n"+
-			"/adson, /adsoff, /adsclear [banner|pop]\n\n"+
-			"🤖 AI (Gemini)\n"+
-			"/ai — haal, /aion, /aioff — Contact Owner chat mein AI assistant\n"+
-			"(Admin Agent chat: site ke ⋮ menu → 🤖 Agent, env GEMINI_API_KEY + ADMIN_EMAILS)\n\n"+
-			"🔎 AUTO-INDEX (channel se)\n"+
-			"/idx — haal, /idxon, /idxoff, /idxscan <naam>, /idxsync — channel se dhundh kar index karo\n"+
-			"/idxall — POORA channel andar se scan karke sab files index (status / stop / reset)\n"+
-			"(env TG_STRING_SESSION; user search/request par file apne-aap site par aa jaati hai)\n\n"+
-			"🎞 QUALITY & SUBTITLES\n"+
-			"/qualitylock on|off — free users 480p tak, 720p+ sirf VIP (premium system ON ho tab)\n"+
-			"/addsub <file id> <language> <https .srt/.vtt link>, /sublist <file id>, /subdel <file id> <number>\n\n"+
-			"📢 AD POPUP (home page ka gol)\n"+
-			"Photo bhejo, caption: /ad text | https://link\n"+
-			"ya /ad <image https link> | text | link\n"+
-			"/ad — haal, /adon /adoff /addel\n\n"+
-			"🔧 TEST\n"+
-			"/testmail <email> — Gmail OTP mail jaa rahi hai ya nahi")
+		a.sendHelpMenu(chat)
 	case "id":
 		a.send(chat, fmt.Sprintf("Tumhara ID: %d", m.From.ID))
 	case "link":
