@@ -560,7 +560,7 @@ func (a *Accounts) GateHandler(next http.Handler) http.Handler {
 		case "/", "/healthz", "/api/config", "/api/me", "/api/contact", "/api/inbox", "/api/premium", "/api/help":
 			return true
 		}
-		return strings.HasPrefix(p, "/api/auth/") || isPWAPath(p)
+		return strings.HasPrefix(p, "/api/auth/") || strings.HasPrefix(p, "/share/") || isPWAPath(p)
 	}
 	deny := func(w http.ResponseWriter, r *http.Request, code int, key string) {
 		switch {

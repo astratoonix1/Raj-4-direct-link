@@ -27,6 +27,7 @@ func writeJSON(w http.ResponseWriter, v any) {
 }
 
 func (a *API) Register(mux *http.ServeMux) {
+	mux.HandleFunc("/share/", a.share)
 	mux.HandleFunc("/api/config", func(w http.ResponseWriter, r *http.Request) {
 		m := map[string]any{"site": a.siteName, "logo": a.logoURL, "thumb": a.thumbURL, "defq": a.defQ, "wa": a.waURL}
 		if a.extra != nil {
