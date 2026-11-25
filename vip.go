@@ -52,10 +52,15 @@ type vipState struct {
 	srcMap  map[int]int // source channel message -> storage message (import yaad)
 	idxLast int         // source channel: yahan tak ke messages dekh liye
 	bf      bfState     // backfill (poora channel scan) ki halat
+	trial   trialState
 }
 
 // loadVipSetting: Hub load ke time settings docs se (hub.go call karta hai)
 func (h *Hub) loadVipSetting(id string, b []byte) {
+	if id == cTrialKey {
+		h.loadTrial(b)
+		return
+	}
 	if strings.HasPrefix(id, uvPrefix) {
 		h.loadUV(id, b)
 		return

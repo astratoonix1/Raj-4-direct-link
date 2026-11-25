@@ -48,6 +48,29 @@ func (a *API) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/api/search", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, map[string]any{"items": a.cat.Search(r.URL.Query().Get("q"))})
 	})
+	mux.HandleFunc("/api/person", func(w http.ResponseWriter, r *http.Request) {
+		name := strings.TrimSpace(r.URL.Query().Get("name"))
+		if len(name) > 80 {
+			name = name[:80]
+		}
+		photo, items := a.cat.ByCast(name)
+		writeJSON(w, map[string]any{"name": name, "photo": photo, "items": items})
+	})
+	mux.HandleFunc("/api/speedtest", func(w http.ResponseWriter, r *http.Request) {
+		// 256 KB — user ka net kitna tez hai (quality suggest ke liye)
+		w.Header().Set("Content-Type", "application/octet-stream")
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("Content-Length", "262144")
+		buf := make([]byte, 32768)
+		for i := range buf {
+			buf[i] = byte(i*31 + 7)
+		}
+		for i := 0; i < 8; i++ {
+			if _, err := w.Write(buf); err != nil {
+				return
+			}
+		}
+	})
 	mux.HandleFunc("/api/title/", func(w http.ResponseWriter, r *http.Request) {
 		key := strings.Trim(strings.TrimPrefix(r.URL.Path, "/api/title/"), "/")
 		tv := a.cat.TitleView(key)

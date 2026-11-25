@@ -56,6 +56,7 @@ User ke message ko Reply karo → jawab site par dikhta hai.`},
 	{"prem", "👑 Premium", `👑 PREMIUM
 /premiumon, /premiumoff — poora premium system chalu / band (turant)
 /premium — abhi ka haal + rule
+/trial — free trial ka haal (/trial on, /trial off, /trial <din>) — har account/device ko ek baar
 /premium <file id> on|off|auto — ek title hamesha premium / hamesha free / saal ke rule par
 /premiumlist — premium titles ki list
 /code <mahine> [kitne] — redeem code banao, jaise /code 1 5

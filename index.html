@@ -80,6 +80,21 @@ img{display:block}
 .btn.ghost{background:rgba(42,42,50,.85);color:#fff;padding:10px 16px}
 .btn.ghost.on{background:#fff;color:#000}
 .btn.wa-share{background:#25d366;color:#04230f;padding:10px 16px}.btn.wa-share:hover{background:#2be172}.btn.wa-share svg{width:18px;height:18px;fill:currentColor}
+.pv{position:absolute;inset:0;overflow:hidden;opacity:0;transition:opacity 1.2s;pointer-events:none;z-index:0}
+.pv.on{opacity:.55}
+.pv iframe{position:absolute;left:50%;top:50%;width:177.78vh;min-width:100%;height:56.25vw;min-height:100%;transform:translate(-50%,-50%) scale(1.25);border:0}
+.dhero .din{position:relative;z-index:1}
+.pers{display:flex;gap:16px;align-items:center;margin-bottom:18px}
+.ppf{width:84px;height:84px;border-radius:50%;overflow:hidden;background:var(--bg3);display:grid;place-items:center;font-weight:800;font-size:1.6rem;color:var(--mut);flex:none}
+.ppf img{width:100%;height:100%;object-fit:cover}
+.trial{background:linear-gradient(135deg,rgba(255,226,122,.16),rgba(245,163,10,.1));border:1px solid rgba(245,163,10,.6);border-radius:14px;padding:14px 16px;margin:0 0 16px;text-align:center}
+.trial .tt{font-size:1.05rem;margin-bottom:4px}.trial .ts{font-size:.8rem;color:#cfd0dc;margin-bottom:10px}
+.qhint{margin:0 0 10px;font-size:.82rem;color:#cfd0dc;display:flex;flex-direction:column;gap:6px}
+.qhint .qb{background:rgba(139,92,246,.14);border:1px solid rgba(139,92,246,.45);border-radius:10px;padding:7px 12px}
+.qhint .ib{background:rgba(245,163,10,.12);border:1px solid rgba(245,163,10,.5);border-radius:10px;padding:7px 12px}
+.q.rec{border-color:#8b5cf6;box-shadow:0 0 0 1px #8b5cf6 inset}
+.q.rec::before{content:"⭐ "}
+.ftag{font-size:.62rem;opacity:.7;margin-left:4px}
 .trm{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.88);display:grid;place-items:center;padding:14px}
 .trb{width:min(960px,100%);position:relative}
 .trv{position:relative;aspect-ratio:16/9;background:#000;border-radius:12px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.6)}
@@ -169,7 +184,7 @@ select.sel{background:var(--bg3);color:#fff;border:1px solid var(--line);border-
 .body h3{font-size:1.2rem;margin:26px 0 12px}
 .body p.ov{line-height:1.6;color:#d6d6de;max-width:900px;margin:0}
 .casts{display:flex;gap:14px;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin}
-.cast{flex:0 0 96px;text-align:center}
+.cast{flex:0 0 96px;text-align:center;cursor:pointer}.cast:hover .pf{outline:2px solid #8b5cf6}
 .cast .pf{width:84px;height:84px;border-radius:50%;overflow:hidden;margin:0 auto 6px;background:var(--bg3);display:grid;place-items:center;font-weight:800;color:var(--mut)}
 .cast img{width:100%;height:100%;object-fit:cover}
 .cast b{display:block;font-size:.8rem;line-height:1.2}
@@ -483,7 +498,7 @@ function ls(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catc
 function ss(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 function toast(m){var t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(function(){t.classList.remove('show')},2200)}
 function fmtSize(b){if(!b)return'';var u=['B','KB','MB','GB'],i=0;while(b>=1024&&i<3){b/=1024;i++}return b.toFixed(i?1:0)+' '+u[i]}
-var WA='',DEFQ='low',ACC=false,GATE=false,ME=null,OWNER={},pageTimer=0;
+var QLOCK=false,NETQ=null,NETP=null,WA='',DEFQ='low',ACC=false,GATE=false,ME=null,OWNER={},pageTimer=0;
 var WAT={
  en:{t:"Join our WhatsApp group for updates and redeem codes. If you don't join, you won't be able to stream.",b:'Join WhatsApp Group',h:'Having a problem? Message the owner'},
  hi:{t:'अपडेट और रिडीम कोड के लिए हमारा WhatsApp ग्रुप जॉइन करें, वरना आप स्ट्रीम नहीं कर पाएँगे।',b:'WhatsApp ग्रुप जॉइन करें',h:'कोई समस्या आ रही है? ओनर को मैसेज करें'},
@@ -506,7 +521,32 @@ function fillWA(el){
 }
 function paintWA(all){Array.prototype.forEach.call(document.querySelectorAll(all?'.wa':'.wa:not([data-done])'),fillWA)}
 document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('.wa .wal button');if(!b)return;LANG=b.getAttribute('data-l');ss('atx-lang',LANG);paintWA(true)});
-function pickF(fs){return DEFQ==='high'?fs[0]:fs[fs.length-1]}
+/* ---- kaunsi quality chalu karun: net ki speed + iPhone par MP4 ---- */
+function qr(q){q=String(q||'').toLowerCase();if(/4k|2160/.test(q))return 5;if(/1080/.test(q))return 4;if(/720/.test(q))return 3;if(/480/.test(q))return 2;if(/360|240/.test(q))return 1;if(/cam/.test(q))return 0;return 2}
+function fext(f){var m=/\.([a-z0-9]{2,4})$/i.exec((f&&f.name)||'');return m?m[1].toLowerCase():''}
+function isMP4(f){var x=fext(f);return x==='mp4'||x==='m4v'||x==='mov'}
+function netWant(){var w=NETQ==='high'?3:NETQ==='mid'?2:NETQ==='low'?1:0;if(w&&QLOCK&&!isPrem())w=Math.min(w,2);return w}
+function pickF(fs){
+  var l=fs;
+  if(isIOS()){var mp=fs.filter(isMP4);if(mp.length)l=mp}
+  var w=netWant();
+  if(!w)return DEFQ==='high'?l[0]:l[l.length-1];
+  var best=null;l.forEach(function(f){var r=qr(f.quality);if(r<=w&&(!best||r>qr(best.quality)))best=f});
+  return best||l[l.length-1];
+}
+function netProbe(){
+  if(NETP)return NETP;
+  try{var s=JSON.parse(sessionStorage.getItem('atx-net')||'null');if(s&&s.q&&Date.now()-s.t<20*60*1000){NETQ=s.q;return NETP=Promise.resolve()}}catch(e){}
+  var c=navigator.connection||navigator.mozConnection||{};
+  function done(q){NETQ=q;try{sessionStorage.setItem('atx-net',JSON.stringify({q:q,t:Date.now()}))}catch(e){}}
+  if(c.saveData){done('low');return NETP=Promise.resolve()}
+  var t0=performance.now();
+  return NETP=fetch('/api/speedtest?r='+Math.random(),{cache:'no-store',credentials:'same-origin',headers:{'X-Cid':cid()}}).then(function(r){if(!r.ok)throw 0;return r.arrayBuffer()}).then(function(b){
+    var sec=Math.max((performance.now()-t0)/1000,.05),mbps=b.byteLength*8/1e6/sec;
+    var q=mbps>=4?'high':mbps>=1.2?'mid':'low';
+    if(/^(slow-2g|2g)$/.test(c.effectiveType||''))q='low';else if(c.effectiveType==='3g'&&q==='high')q='mid';
+    done(q)}).catch(function(){NETP=null});
+}
 function cid(){var c=ls('atx-cid',null);if(!c){c='';for(var i=0;i<16;i++)c+=Math.floor(Math.random()*16).toString(16);ss('atx-cid',c)}return c}
 function showBlocked(){clearInterval(pageTimer);clearInterval(heroTimer);try{adStop()}catch(e){}document.body.innerHTML='<div style="min-height:100vh;display:grid;place-items:center;text-align:center;padding:24px;background:#0b0b0f;color:#fff"><div><div style="font-size:56px">🚫</div><h1 style="margin:10px 0 6px">Access blocked</h1><p style="color:#aaa;margin:0">Your access to this site has been blocked by the owner.</p></div></div>'}
 function api(p){return fetch(p,{headers:{'X-Cid':cid()},credentials:'same-origin'}).then(function(r){if(r.status===401&&GATE&&ME){ME=null;paintProfile();route()}if(r.status===403){return r.clone().json().then(function(j){if(j&&j.blocked)showBlocked()},function(){}).then(function(){throw new Error(r.status)})}if(!r.ok)throw new Error(r.status);return r.json()})}
@@ -940,6 +980,8 @@ function renderPremium(){
     var sp='';for(var i=0;i<16;i++)sp+='<i style="left:'+Math.round(Math.random()*100)+'%;top:'+Math.round(Math.random()*100)+'%;animation-delay:'+(Math.random()*3).toFixed(2)+'s"></i>';
     h+='<div class="phero"><div class="sparks">'+sp+'</div><div class="pcrown">'+CROWN+'</div><h1 class="shine">Premium</h1><p>'+(d.from_year?esc(String(d.from_year))+' and all later courses':'Unlock all premium courses')+'</p></div>';
     h+=active?'<div class="pstat on">👑 Premium is active — '+(!ME.until||Date.parse(ME.until)-Date.now()>3e10?'<b>lifetime</b> — no expiry.':'valid until <b>'+fmtD(ME.until)+'</b> ('+Math.max(0,Math.ceil((Date.parse(ME.until)-Date.now())/864e5))+' days left). You can extend it anytime.')+'</div>':'<div class="pstat">'+(ME?'You are on the free plan.':'Sign in first to get Premium.')+'</div>';
+    var TR=d.trial||{};
+    if(TR.on&&!active&&(!ME||TR.ok))h+='<div class="trial"><div class="tt">🎁 <b>'+TR.days+' din ka FREE Premium trial</b></div><div class="ts">Pehle try karo, pasand aaye tab plan lo. Har account aur device par sirf ek baar.</div>'+(ME?'<button class="btn gold wide" id="trb" type="button">🎁 Free trial shuru karo</button>':'<button class="btn gold wide" id="trl" type="button">Sign In karke free trial lo</button>')+'</div>';
     h+='<div class="plans">'+plans.map(function(p,i){var pm=Math.round(p.price/p.months),sv=base?Math.round((1-(p.price/p.months)/base)*100):0;
       return '<button class="plan'+(sel===p.months?' sel':'')+'" data-m="'+p.months+'">'+(sv>0&&i===plans.length-1?'<em>BEST VALUE</em>':(sv>0?'<em class="s">Save '+sv+'%</em>':''))+'<span class="pl">'+esc(p.label)+'</span><b>₹'+p.price+'</b><span class="pm">₹'+pm+'/month</span></button>'}).join('')+'</div>';
     var P=plans.filter(function(p){return p.months===sel})[0];
@@ -962,6 +1004,8 @@ function renderPremium(){
     box.querySelectorAll('[data-pd]').forEach(function(b){b.onclick=function(){post('/api/premium/pay/delete',{id:b.getAttribute('data-pd')}).then(function(){toast('Removed');load()}).catch(function(e){toast(e.message)})}});
     var pc=$('#pclr');if(pc)pc.onclick=function(){post('/api/premium/pay/delete',{id:'all'}).then(function(){toast('Cleared');load()}).catch(function(e){toast(e.message)})};
     var lg=$('#lg');if(lg)lg.onclick=function(){try{sessionStorage.setItem('atx-next','#/premium')}catch(e){}renderLogin()};
+    var trb=$('#trb');if(trb)trb.onclick=function(){trb.disabled=true;post('/api/premium/trial',{}).then(function(){return api('/api/me')}).then(function(r){ME=r.user;paintProfile();burst('big');toast('🎁 Free trial shuru ho gaya!');load()}).catch(function(e){trb.disabled=false;toast(e.message||'Trial nahi mila')})};
+    var trl=$('#trl');if(trl)trl.onclick=function(){location.hash='#/login'};
     var cpu=$('#cpu');if(cpu)cpu.onclick=function(){try{navigator.clipboard.writeText(d.upi);toast('UPI ID copied')}catch(e){toast(d.upi)}};
     var pf=$('#pf');if(pf)submit(pf,function(){return post('/api/premium/pay',{months:sel,utr:$('#utr').value.trim()}).then(function(){toast('Request sent ✓ The owner will verify it and activate Premium');sel=0;load()})});
     var rf=$('#rf2');if(rf)rf.onsubmit=function(ev){ev.preventDefault();var er=$('#er2');er.textContent='';
@@ -1090,6 +1134,45 @@ function renderUpdates(){
     markSeen()}).catch(function(){$('#ul').innerHTML='<div class="sub">Could not load.</div>'});
 }
 
+/* ---- actor page: uski saari films jo site par hain ---- */
+function renderPerson(name){
+  setActive('');
+  app.innerHTML='<div class="page"><div class="pers"><div class="ppf" id="ppf"></div><div><h1 style="margin:0">'+esc(name)+'</h1><div class="hint" id="psub" style="color:var(--mut)">…</div></div></div><div class="grid" id="grid"></div></div>';
+  api('/api/person?name='+encodeURIComponent(name)).then(function(d){
+    reg(d.items);
+    $('#ppf').innerHTML=d.photo?'<img src="'+esc(d.photo)+'" alt="">':esc(name.charAt(0));
+    $('#psub').textContent=d.items.length?d.items.length+' title'+(d.items.length>1?'s':'')+' on '+SITE:'Is actor ki koi film abhi site par nahi hai.';
+    $('#grid').innerHTML=d.items.length?d.items.map(function(c){return cardHTML(c)}).join(''):'<div class="empty" style="grid-column:1/-1"><b>Abhi kuch nahi 😕</b><a href="#/request" style="color:var(--red)">Request karo</a> — hum add kar denge.</div>';
+  }).catch(function(){$('#psub').textContent='Load nahi hua.'});
+}
+/* ---- hero par trailer ka muted auto-preview ---- */
+var PVH=null;
+function closePV(){if(PVH){window.removeEventListener('message',PVH);PVH=null}var p=document.getElementById('pv');if(p)p.remove()}
+function heroPreview(t){
+  var c=navigator.connection||{};
+  if(!t.trailer||c.saveData||/^(slow-2g|2g|3g)$/.test(c.effectiveType||'')||NETQ==='low')return;
+  try{if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return}catch(e){}
+  var hero=document.querySelector('.dhero');if(!hero)return;
+  setTimeout(function(){
+    if(document.hidden||!document.querySelector('.dhero')||document.getElementById('pv'))return;
+    closePV();
+    var w=document.createElement('div');w.id='pv';w.className='pv';
+    var id=encodeURIComponent(t.trailer);
+    w.innerHTML='<iframe tabindex="-1" allow="autoplay; encrypted-media" src="https://www.youtube-nocookie.com/embed/'+id+'?autoplay=1&mute=1&controls=0&loop=1&playlist='+id+'&playsinline=1&modestbranding=1&rel=0&disablekb=1&fs=0&iv_load_policy=3&enablejsapi=1&origin='+encodeURIComponent(location.origin)+'"></iframe>';
+    var f=w.firstChild;
+    PVH=function(e){
+      if(e.source!==f.contentWindow)return;
+      var d=e.data;if(typeof d==='string'){try{d=JSON.parse(d)}catch(x){return}}
+      if(!d)return;
+      if(d.event==='onError'){closePV();return}
+      var st=d.event==='onStateChange'?d.info:(d.event==='infoDelivery'&&d.info&&d.info.playerState!==undefined?d.info.playerState:null);
+      if(st===1)w.classList.add('on');
+    };
+    window.addEventListener('message',PVH);
+    f.addEventListener('load',function(){try{f.contentWindow.postMessage(JSON.stringify({event:'listening',id:1}),'*')}catch(e){}});
+    hero.insertBefore(w,hero.querySelector('.din'));
+  },2500);
+}
 /* ---- trailer: isi page par chalta hai (YouTube par nahi jaata) ---- */
 function closeTrailer(){var m=$('#trm');if(m)m.remove();document.removeEventListener('keydown',trEsc)}
 function trEsc(e){if(e.key==='Escape')closeTrailer()}
@@ -1130,7 +1213,7 @@ function renderTitle(key){
       (t.trailer?'<button class="btn ghost" id="dtr">▶ Trailer</button>':'')+'<button class="btn wa-share" id="dsh">'+ICON.wa+' WhatsApp</button></div></div></div></section>';
     h+='<div class="body fade">'+(locked(t)?'<div class="pnote">👑 This is a <b>Premium</b> course. <a href="#/premium" data-prem>Get Premium</a> to watch.</div>':'')+'<div class="wa"></div>';
     if(t.overview)h+='<h3>Story</h3><p class="ov">'+esc(t.overview)+'</p>';
-    if(t.cast&&t.cast.length)h+='<h3>Cast</h3><div class="casts">'+t.cast.map(function(c){return '<div class="cast"><div class="pf">'+(c.photo?'<img loading="lazy" src="'+esc(c.photo)+'" alt="">':esc(c.name.charAt(0)))+'</div><b>'+esc(c.name)+'</b><span>'+esc(c.role||'')+'</span></div>'}).join('')+'</div>';
+    if(t.cast&&t.cast.length)h+='<h3>Cast</h3><div class="casts">'+t.cast.map(function(c){return '<div class="cast" data-p="'+esc(c.name)+'" role="link" tabindex="0"><div class="pf">'+(c.photo?'<img loading="lazy" src="'+esc(c.photo)+'" alt="">':esc(c.name.charAt(0)))+'</div><b>'+esc(c.name)+'</b><span>'+esc(c.role||'')+'</span></div>'}).join('')+'</div>';
     // episodes / files
     var entries=d.entries||[],seasons={};
     entries.forEach(function(e){(seasons[e.season||0]=seasons[e.season||0]||[]).push(e)});
@@ -1143,22 +1226,31 @@ function renderTitle(key){
       while(i<n.length){var j=i;while(j+1<n.length&&n[j+1]===n[j]+1)j++;out.push(n[i]===n[j]?'E'+n[i]:'E'+n[i]+'–E'+n[j]);i=j+1}
       return out.join(', ')}
     if(hasS)h+='<div class="sbox"><div class="shd">📺 Seasons <small>👇 Season chuno, phir episode par click karo</small></div><div class="seasons" id="ssn">'+snums.map(function(s,i){var l=seasons[s],cv=covText(l);return '<button class="schip'+(i?'':' on')+'" data-s="'+s+'"><b>'+(s?'Season '+s:'Other')+'</b><span>'+(cv||l.length+' file'+(l.length>1?'s':''))+'</span></button>'}).join('')+'</div></div><div class="ssum" id="ssum"></div>';
-    h+='<div id="eps"></div>';
+    h+='<div class="qhint" id="qhint"></div><div id="eps"></div>';
     if(d.parts&&d.parts.length){reg([]);h+='<h3>'+esc(t.collection_name||'More parts')+'</h3><div class="track-wrap"><div class="track" style="padding-left:0;padding-right:0">'+d.parts.map(function(p){
       var c={key:p.key||'',title:p.title,year:p.year,poster:p.poster,category:'Movie'};if(p.key)cardData[p.key]=c;
       return cardHTML(c,{na:!p.available,cur:p.current,nobtn:true,sub:p.available?(p.current?'Now':p.year||''):'Not uploaded yet'})}).join('')+'</div></div>'}
     if(d.similar&&d.similar.length){reg(d.similar);h+='<h3>More Like This</h3><div class="track-wrap"><div class="track" style="padding-left:0;padding-right:0">'+d.similar.map(function(c){return cardHTML(c)}).join('')+'</div></div>'}
     h+='</div><footer>© '+esc(SITE)+'</footer>';
     app.innerHTML=h;window.scrollTo(0,0);document.title=t.title+' — '+SITE;
+    var curSeason;
+    function paintHint(){
+      var el=$('#qhint');if(!el)return;var o='',f0=d.entries&&d.entries[0]&&d.entries[0].files.length?pickF(d.entries[0].files):null;
+      if(netWant()&&f0)o+='<div class="qb">⭐ Aapke net ke hisaab se <b>'+esc(f0.quality)+'</b> best rahega'+(QLOCK&&!isPrem()&&NETQ==='high'?' <span style="color:var(--mut)">(720p+ VIP ke liye)</span>':'')+' — Play dabate hi wahi chalega.</div>';
+      if(isIOS()){var anyMp4=(d.entries||[]).some(function(e){return e.files.some(isMP4)});o+='<div class="ib">📱 iPhone par <b>MP4</b> file best chalti hai'+(anyMp4?' — MP4 wali pehle chuni gayi hai.':'. Is title ki file MKV hai: na chale to video page par "▶ VLC mein kholo" dabana.')+'</div>'}
+      el.innerHTML=o}
     function paintEps(s){
       var list=(seasons[s]||entries);
       var sm=$('#ssum');if(sm){var cv=covText(list);sm.innerHTML=(s?'<b>Season '+s+'</b>':'<b>Files</b>')+' · '+list.length+' item'+(list.length>1?'s':'')+(cv?' · <span class="erng">Episodes: '+esc(cv)+'</span>':'')}
       $('#eps').innerHTML=list.map(function(e){
-        var pf=pickF(e.files);
+        var pf=pickF(e.files);curSeason=s;
         return '<div class="ep" data-fid="'+pf.id+'"><div class="pn">'+ICON.play+'</div><div class="lb">'+esc(e.label||t.title)+(e.ep_end>e.episode?'<div class="erng" style="margin-top:4px">📦 Episode '+e.episode+' se '+e.ep_end+' tak</div>':'')+'</div><div class="nm">'+esc(pf.name)+'</div><div class="qs">'+
-          e.files.map(function(f){return '<button class="q" data-fid="'+f.id+'" title="'+esc(fmtSize(f.size))+'">'+esc(f.quality)+(f.size?' · '+esc(fmtSize(f.size)):'')+'</button>'}).join('')+'</div></div>'}).join('');
+          e.files.map(function(f){var x=fext(f);return '<button class="q'+(f.id===pf.id&&netWant()?' rec':'')+'" data-fid="'+f.id+'" title="'+esc(fmtSize(f.size))+'">'+esc(f.quality)+(f.size?' · '+esc(fmtSize(f.size)):'')+(isIOS()&&x&&!isMP4(f)?'<span class="ftag">'+esc(x.toUpperCase())+'</span>':'')+'</button>'}).join('')+'</div></div>'}).join('');
     }
-    paintEps(hasS?snums[0]:undefined);
+    paintEps(hasS?snums[0]:undefined);paintHint();
+    netProbe().then(function(){if(!document.getElementById('eps'))return;var f1=d.entries&&d.entries[0]&&d.entries[0].files.length?pickF(d.entries[0].files):null;if(f1&&!cw)playId=f1.id;paintEps(curSeason);paintHint()});
+    heroPreview(t);
+    $$('.cast').forEach(function(c){var go=function(){location.hash='#/p/'+encodeURIComponent(c.getAttribute('data-p'))};c.onclick=go;c.onkeydown=function(e){if(e.key==='Enter')go()}});
     $('#eps').onclick=function(e){var q=e.target.closest('.q'),ep=e.target.closest('.ep');if((q||ep)&&locked(t)){goPremium();return}if(q){location.href='/w/'+q.getAttribute('data-fid');return}if(ep)location.href='/w/'+ep.getAttribute('data-fid')};
     var ssn=$('#ssn');if(ssn)ssn.onclick=function(e){var b=e.target.closest('.schip');if(!b)return;$$('.schip',ssn).forEach(function(x){x.classList.toggle('on',x===b)});paintEps(+b.getAttribute('data-s'))};
     var dp=$('#dp');if(dp)dp.onclick=function(){if(locked(t)){goPremium();return}location.href='/w/'+playId};
@@ -1255,6 +1347,7 @@ function adStop(){clearTimeout(adT);if(adBtn)adBtn.classList.remove('show');if(a
 
 /* ============ router ============ */
 function route(){
+  closePV();
   if(!/^#\/s\//.test(location.hash||''))closeSearch(true);
   adStop();clearInterval(pageTimer);clearInterval(heroTimer);document.title=SITE;app.classList.remove('fade');
   var h=location.hash||'#/',m;
@@ -1265,6 +1358,7 @@ function route(){
   else if((m=h.match(/^#\/g\/(.+)/)))renderBrowse('',decodeURIComponent(m[1]));
   else if((m=h.match(/^#\/t\/(.+)/)))renderTitle(decodeURIComponent(m[1]));
   else if((m=h.match(/^#\/s\/(.+)/)))renderSearch(decodeURIComponent(m[1]));
+  else if((m=h.match(/^#\/p\/(.+)/)))renderPerson(decodeURIComponent(m[1]));
   else if(h==='#/list')renderList();
   else if(h==='#/agent')renderAgent();
   else if(h==='#/admin')renderAdmin();
@@ -1279,7 +1373,7 @@ function route(){
 window.addEventListener('hashchange',function(){route();setTimeout(placeAds,900)});
 try{var nq=new URLSearchParams(location.search).get('next');if(nq&&/^\/w\/\d+$/.test(nq)){sessionStorage.setItem('atx-next',nq);history.replaceState(null,'','/'+location.hash)}}catch(e){}
 new MutationObserver(function(){paintWA(false)}).observe(app,{childList:true,subtree:true});
-api('/api/config').then(function(c){if(!c)return;if(c.thumb)THUMB=c.thumb;ACC=!!c.accounts;GATE=ACC&&!!c.gate;WA=c.wa||'';PREM=ACC&&!!c.prem;if(c.defq==='high')DEFQ='high';OWNER=c.owner||{};AD=c.ad&&c.ad.img?c.ad:null;ADS=c.ads&&(c.ads.banner||c.ads.pop)?c.ads:null;AIKEY=!!c.ai;APK=c.apk&&c.apk.url?c.apk:null;if(c.site){SITE=c.site;$('#logo').textContent=c.site;document.title=c.site}if(c.logo){var im=new Image();im.className='logoimg';im.alt=SITE;im.onload=function(){$('#logo').textContent='';$('#logo').appendChild(im)};im.src=c.logo}}).catch(function(){}).then(function(){return ACC?loadMe():0}).then(function(){paintProfile();route();setTimeout(placeAds,1200);pollInbox();if(apkOK()){var m=$('#mapk');if(m)m.style.display=''};setInterval(function(){if(!document.hidden)pollInbox()},30000)});
+api('/api/config').then(function(c){if(!c)return;if(c.thumb)THUMB=c.thumb;ACC=!!c.accounts;GATE=ACC&&!!c.gate;WA=c.wa||'';PREM=ACC&&!!c.prem;if(c.defq==='high')DEFQ='high';QLOCK=!!c.qlock;OWNER=c.owner||{};AD=c.ad&&c.ad.img?c.ad:null;ADS=c.ads&&(c.ads.banner||c.ads.pop)?c.ads:null;AIKEY=!!c.ai;APK=c.apk&&c.apk.url?c.apk:null;if(c.site){SITE=c.site;$('#logo').textContent=c.site;document.title=c.site}if(c.logo){var im=new Image();im.className='logoimg';im.alt=SITE;im.onload=function(){$('#logo').textContent='';$('#logo').appendChild(im)};im.src=c.logo}}).catch(function(){}).then(function(){return ACC?loadMe():0}).then(function(){netProbe();paintProfile();route();setTimeout(placeAds,1200);pollInbox();if(apkOK()){var m=$('#mapk');if(m)m.style.display=''};setInterval(function(){if(!document.hidden)pollInbox()},30000)});
 })();
 </script>
 </body>

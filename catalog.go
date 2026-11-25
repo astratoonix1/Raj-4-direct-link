@@ -559,6 +559,30 @@ func (c *Catalog) Browse(cat, genre, sortBy string, page int) BrowseView {
 	return bv
 }
 
+// ByCast: is actor (poore naam se) ki saari titles jo site par hain. photo = uski photo.
+func (c *Catalog) ByCast(name string) (string, []Card) {
+	want := normText(name)
+	out := []Card{}
+	photo := ""
+	if want == "" {
+		return "", out
+	}
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	for _, t := range c.visibleSorted() {
+		for _, cs := range t.Cast {
+			if normText(cs.Name) == want {
+				if photo == "" {
+					photo = cs.Photo
+				}
+				out = append(out, c.card(t, false))
+				break
+			}
+		}
+	}
+	return photo, out
+}
+
 func (c *Catalog) Search(q string) []Card {
 	q = strings.TrimSpace(q)
 	nq := normText(q)

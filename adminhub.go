@@ -599,7 +599,7 @@ func (a *App) hubCommand(m *tgbotapi.Message) bool {
 		}
 		return u, true
 	}
-	if a.premiumCommand(m, arg) || a.vipCommand(m, arg) || a.idxCommand(m, arg) {
+	if a.premiumCommand(m, arg) || a.vipCommand(m, arg) || a.idxCommand(m, arg) || a.trialCommand(m, arg) {
 		return true
 	}
 	switch m.Command() {

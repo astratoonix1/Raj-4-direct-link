@@ -64,6 +64,7 @@ type User struct {
 	Likes        json.RawMessage `json:"likes,omitempty"`
 	CW           json.RawMessage `json:"cw,omitempty"`
 	Notes        []Note          `json:"notes,omitempty"` // personal bell notices (naya episode...)
+	TrialUsed    bool            `json:"trial_used,omitempty"`
 }
 
 type session struct {

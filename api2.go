@@ -335,11 +335,32 @@ func (a *Accounts) Register(mux *http.ServeMux) {
 	// ---- premium ----
 	mux.HandleFunc("/api/premium", func(w http.ResponseWriter, r *http.Request) {
 		out := map[string]any{"plans": h.cfg.Plans, "qr": a.PayQR, "upi": a.PayUPI, "from_year": a.cat.PremiumFrom(), "me": nil, "pays": []*PayReq{}}
+		ton, tdays, _ := h.TrialInfo()
+		tr := map[string]any{"on": ton, "days": tdays, "ok": false}
 		if u := a.user(r); u != nil {
 			out["me"] = a.userJSON(u)
 			out["pays"] = h.PaymentsOf(u.ID)
+			tr["ok"] = h.TrialEligible(u.ID, reqDevCode(r))
+			tr["used"] = u.TrialUsed
 		}
+		out["trial"] = tr
 		writeJSON(w, out)
+	})
+	mux.HandleFunc("/api/premium/trial", func(w http.ResponseWriter, r *http.Request) {
+		if !post(w, r, 512, &struct{}{}) {
+			return
+		}
+		u := a.user(r)
+		if u == nil {
+			fail(w, herr(401, "Please sign in first."))
+			return
+		}
+		until, err := h.ClaimTrial(u.ID, reqDevCode(r))
+		if err != nil {
+			fail(w, err)
+			return
+		}
+		okJSON(w, map[string]any{"until": until})
 	})
 	mux.HandleFunc("/api/premium/pay", func(w http.ResponseWriter, r *http.Request) {
 		var b struct {
