@@ -255,6 +255,15 @@ select.sel{background:var(--bg3);color:#fff;border:1px solid var(--line);border-
 .crown{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.72);border:1px solid #f5c542;display:grid;place-items:center;font-size:.72rem;z-index:3}
 .btn.gold{background:linear-gradient(135deg,#ffe27a,#f5a30a);color:#3a2500;font-weight:800;border:0}
 .btn.gold:hover{filter:brightness(1.08)}
+.sgn{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#ff2d3d,#e50914);color:#fff!important;font-weight:800;font-size:.84rem;padding:7px 14px;border-radius:20px;text-decoration:none;white-space:nowrap;box-shadow:0 0 0 0 rgba(229,9,20,.7);animation:sgnp 2.2s infinite}
+.sgn:hover{filter:brightness(1.12)}
+@keyframes sgnp{0%{box-shadow:0 0 0 0 rgba(229,9,20,.65)}70%{box-shadow:0 0 0 10px rgba(229,9,20,0)}100%{box-shadow:0 0 0 0 rgba(229,9,20,0)}}
+.gated .sgn{display:none!important}
+@media(max-width:760px){.sgn{padding:6px 11px;font-size:.78rem}}
+.sbn{margin:14px 16px 0;padding:14px 16px;border-radius:14px;background:linear-gradient(135deg,rgba(229,9,20,.20),rgba(139,92,246,.18));border:1px solid rgba(229,9,20,.55);display:flex;gap:14px;align-items:center;flex-wrap:wrap;position:relative}
+.sbn .st{flex:1 1 220px;font-size:.88rem;color:#e6e6ee;line-height:1.45}.sbn .st b{display:block;font-size:1rem;color:#fff;margin-bottom:2px}
+.sbn .sb{display:flex;gap:8px;flex-wrap:wrap}
+.sbn .x{position:absolute;right:8px;top:4px;background:none;border:0;color:#9a9aa8;font-size:1.1rem;cursor:pointer;padding:4px 8px}
 .pbtn{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#ffe27a,#f5a30a);color:#3a2500!important;font-weight:800;font-size:.84rem;padding:6px 14px;border-radius:20px;white-space:nowrap;animation:pglow 2.6s ease-in-out infinite}
 .pbtn.on{background:rgba(245,197,66,.16);color:#f5c542!important;animation:none;border:1px solid #f5c542}
 .gated .pbtn{display:none!important}
@@ -470,6 +479,7 @@ footer{padding:30px var(--pad) 40px;color:var(--mut);font-size:.8rem;border-top:
   </nav>
   <div class="sp"></div>
   <div class="search" id="search">
+    <a class="sgn" id="sgn" href="#/login" style="display:none">🔑 <span>Sign in</span></a>
     <a class="pbtn" id="pbtn" href="#/premium" data-prem style="display:none">👑 <span>Premium</span></a>
     <button class="ico" id="sbtn" aria-label="Search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></button>
     <input id="sin" type="search" placeholder="Titles, cast, genres" autocomplete="off">
@@ -627,6 +637,7 @@ function paintProfile(){
   var mh=$('#mhelp');if(mh)mh.style.display=AIKEY?'':'none';
   var md=$('#madmin');if(md)md.style.display=(ME&&ME.admin)?'':'none';
   var ma=$('#magent');if(ma)ma.style.display=(AIKEY&&ME&&ME.admin)?'':'none';
+  var sg=$('#sgn');if(sg)sg.style.display=(ACC&&!ME)?'inline-flex':'none';
   var l=$('#lnk');if(l)l.textContent=ACC&&ME?'⚙️ My Account':(ACC?'🔑 Sign in / Sign up':'👤 Profile');
   var o=$('#lout');if(o)o.style.display=ACC&&ME?'block':'none';
 }
@@ -758,6 +769,8 @@ function renderHome(){
         (heroes.length>1?'<div class="dots">'+heroes.map(function(_,i){return '<i class="'+(i?'':'on')+'" data-i="'+i+'"></i>'}).join('')+'</div>':'')+'</section>';
     } else {h+='<div style="height:var(--nav-h)"></div>'}
     h+='<div class="wawrap"><div class="wa"></div></div>';
+    var hideSB=false;try{hideSB=sessionStorage.getItem('atx-sbn')==='1'}catch(e){}
+    if(ACC&&!ME&&!hideSB)h+='<div class="sbn" id="sbn"><button class="x" id="sbx" aria-label="Close">✕</button><div class="st"><b>Create a free account</b>Save your My List, continue watching on any device, and get a free Premium trial.</div><div class="sb"><a class="btn red" href="#/login">🔑 Sign in</a><a class="btn info" href="#/login" id="sbup">Sign up free</a></div></div>';
     h+='<main><div class="rows" '+(heroes.length?'':'style="margin-top:20px"')+'>';
     // continue watching
     var cw=getCW();
@@ -771,6 +784,8 @@ function renderHome(){
       h+=rowHTML(r.name,r.items,{top:r.slug==='top',link:link})});
     h+='</div></main><footer>© '+esc(SITE)+' · Stream the Universe</footer>';
     app.innerHTML=h;app.classList.add('fade');
+    var sbx=$('#sbx');if(sbx)sbx.onclick=function(){var b=$('#sbn');if(b)b.remove();try{sessionStorage.setItem('atx-sbn','1')}catch(e){}};
+    var sbu=$('#sbup');if(sbu)sbu.onclick=function(e){e.preventDefault();renderLogin('up')};
     initHero();
   }).catch(function(){app.innerHTML='<div class="page"><div class="empty"><b>Could not load</b>Please refresh in a little while.</div></div>'});
 }
@@ -925,7 +940,7 @@ function renderLocalLogin(mode){
   app.innerHTML='<div class="login"><form class="lbox" id="lf"><h1>'+(p?'Profile':(mode==='up'?'Sign Up':'Sign In'))+'</h1>'+
    '<input id="ln" placeholder="Your name" value="'+esc(p?p.name:'')+'" required maxlength="30">'+
    '<input id="le" type="email" placeholder="Email (optional)" value="'+esc(p&&p.email?p.email:'')+'">'+
-   '<button class="btn red" type="submit">'+(p?'Save':(mode==='up'?'Account banao':'Sign In'))+'</button>'+
+   '<button class="btn red" type="submit">'+(p?'Save':(mode==='up'?'Create account':'Sign In'))+'</button>'+
    (p?'<button class="btn ghost" type="button" id="lo" style="width:100%;justify-content:center;margin-top:10px">Sign out</button>':'')+
    '<div class="alt">'+(mode==='up'?'Already have an account? <a id="sw">Sign In</a>':'New here? <a id="sw">Sign Up</a>')+'</div>'+
    '<small>This profile is saved only on this device. Your My List and Continue Watching are remembered here under your name. No password needed.</small></form></div>';
@@ -1027,7 +1042,7 @@ function renderPremium(){
         '<ol><li>'+(d.qr?'Scan the QR code and pay':'Pay via UPI:')+' <b>₹'+P.price+'</b>.</li>'+(d.upi?'<li>UPI ID: <b id="upi">'+esc(d.upi)+'</b> <button class="cp" id="cpu" type="button">Copy</button></li>':'')+'<li>After paying, enter the <b>Transaction ID / UTR</b> (12 digits) shown in your payment app below.</li><li>The owner will verify the payment and activate Premium. This can take a few hours.</li></ol></div>'+
         '<form id="pf"><input id="utr" placeholder="Transaction ID / UTR (e.g. 123456789012)" maxlength="30" autocomplete="off" required><div class="err" id="er"></div><button class="btn gold wide" type="submit">✅ I have paid</button></form></div>';
     }else if(P&&!ME){
-      h+='<div class="paybox"><button class="btn gold wide" id="lg" type="button">Sign In karke aage badho</button></div>';
+      h+='<div class="paybox"><button class="btn gold wide" id="lg" type="button">Sign in to continue</button></div>';
     }
     if(ME){
       h+='<div class="paybox"><h3>🎟 Redeem code</h3><form id="rf2" class="rrow"><input id="rc" placeholder="AST-XXXX-XXXX" maxlength="20" autocomplete="off" required><button class="btn gold" type="submit">Redeem</button></form><div class="err" id="er2"></div></div>';
