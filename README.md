@@ -391,3 +391,22 @@ Safety: agent sirf admin account ke liye hai (server check karta hai), users ke 
 **3. 🤖 Help Assistant (sab ke liye, guests bhi).** ⋮ menu mein **🤖 Help Assistant** aur Sign In / OTP page par "OTP nahi aaya? Help chahiye?" link. Ye sirf website use karna sikhata hai: Gmail se login/signup, OTP **spam / promotions folder** mein dhundna aur "Not spam" karna, Resend, Forgot password, Premium kaise lein (UPI + UTR), movie request, quality (480p free). Baaki sawaal (general gyaan, coding, chit-chat) ko polite "sirf website ki help" bolke mana kar deta hai. Ye koi action nahi kar sakta, koi tool nahi, koi admin data nahi. Limit: 20 sawaal/ghanta har user/guest, 40/ghanta har IP, sawaal max 500 akshar, sirf pichle 10 messages ka context. `/aioff` karoge to ye bhi band ho jata hai.
 
 **Movie request AI se.** Koi Help Assistant ya Contact Owner chat mein bole "Raj ko bolo ye movie add kare" / "Inception add karo", to AI seedha **Request Movie** jaisi request bana deta hai (naam, type, saal). Tumhare bot mein wahi request notification aata hai jisme **ID, user ka naam/email aur title** hota hai, note mein "[AI se]" likha hota hai. User ko AI request ID batata hai aur status bell icon mein dikhta hai. Agar title site par pehle se hai ya user ne wahi request pehle bheji hai, to AI bata deta hai aur nayi request nahi banti. Limit wahi purani: 6 requests/ghanta har user, ek chat turn mein max 2. AI movie khud add nahi karta, sirf tumhe request bhejta hai.
+
+---
+
+## Latest additions
+
+| Feature | Files | Notes |
+|---|---|---|
+| Full-channel scan | `autoindex.go`, `userbot.go` | Bot: `/idxall`, `/idxall status\|stop\|reset`. Resumable, safe after restart. |
+| Admin help menu (buttons) | `helpmenu.go`, `main.go` | `/start` or `/help` shows buttons; each opens that section's commands. |
+| Season picker + episode ranges | `index.html`, `catalog.go`, `tmdb.go` | Pack files like `E01-E09` show "Episodes 1 to 9". |
+| `@channel_` filename fix | `tmdb.go`, `pipeline.go` | Run `/retry` once to re-match old "Other" files. |
+| Share card + in-page trailer | `share.go`, `index.html` | `/share/<title key>` gives a WhatsApp preview (poster + name). |
+| Actor page, hero preview, quality suggest | `index.html`, `api.go`, `catalog.go` | `/api/person`, `/api/speedtest`; iPhone prefers MP4. |
+| Premium free trial | `trial.go` | Bot: `/trial`, `/trial on\|off`, `/trial <days>`. One per account and device. |
+| Premium device limit | `devices.go` | Bot: `/devlimit <n>\|off` (default 2 at a time). |
+| Payment status tracker | `index.html`, `api2.go` | Pending / verified / rejected card with ETA from past approvals. |
+| Premium per season | `seasons.go`, `catalog.go` | A series season is premium by its own release year. Bot: `/seasons` backfills old series. |
+
+Upload **all files** together; `main.go`, `adminhub.go`, `userbot.go` only compile on Koyeb (gotd).

@@ -28,32 +28,33 @@ type Part struct {
 }
 
 type TitleDoc struct {
-	Key            string    `bson:"_id" json:"key"` // movie:603 | tv:1396 | other:<naam>
-	Kind           string    `bson:"kind" json:"kind"`
-	Category       string    `bson:"category" json:"category"` // Movie|Series|Anime|Cartoon|Other
-	Title          string    `bson:"title" json:"title"`
-	Overview       string    `bson:"overview,omitempty" json:"overview,omitempty"`
-	Tagline        string    `bson:"tagline,omitempty" json:"tagline,omitempty"`
-	Year           int       `bson:"year,omitempty" json:"year,omitempty"`
-	Rating         float64   `bson:"rating,omitempty" json:"rating,omitempty"`
-	Runtime        int       `bson:"runtime,omitempty" json:"runtime,omitempty"`
-	Seasons        int       `bson:"seasons,omitempty" json:"seasons,omitempty"`
-	Genres         []string  `bson:"genres,omitempty" json:"genres,omitempty"`
-	Poster         string    `bson:"poster,omitempty" json:"poster,omitempty"`
-	Backdrop       string    `bson:"backdrop,omitempty" json:"backdrop,omitempty"`
-	Cast           []Cast    `bson:"cast,omitempty" json:"cast,omitempty"`
-	Trailer        string    `bson:"trailer,omitempty" json:"trailer,omitempty"`
-	TMDBID         int       `bson:"tmdb_id,omitempty" json:"-"`
-	CollectionID   int       `bson:"collection_id,omitempty" json:"-"`
-	CollectionName string    `bson:"collection_name,omitempty" json:"collection_name,omitempty"`
-	Parts          []Part    `bson:"parts,omitempty" json:"-"`
-	Aliases        []string  `bson:"aliases,omitempty" json:"-"`
-	Views          int       `bson:"views" json:"-"`
-	Locked         bool      `bson:"locked,omitempty" json:"-"`  // admin ne khud set kiya (/fix, /cat)
-	Access         string    `bson:"access,omitempty" json:"-"`  // "" = auto (saal ka rule) | "premium" | "free"
-	Premium        bool      `bson:"-" json:"premium,omitempty"` // sirf dikhane ke liye (calculate hota hai)
-	Created        time.Time `bson:"created" json:"-"`
-	Updated        time.Time `bson:"updated" json:"-"`
+	Key            string         `bson:"_id" json:"key"` // movie:603 | tv:1396 | other:<naam>
+	Kind           string         `bson:"kind" json:"kind"`
+	Category       string         `bson:"category" json:"category"` // Movie|Series|Anime|Cartoon|Other
+	Title          string         `bson:"title" json:"title"`
+	Overview       string         `bson:"overview,omitempty" json:"overview,omitempty"`
+	Tagline        string         `bson:"tagline,omitempty" json:"tagline,omitempty"`
+	Year           int            `bson:"year,omitempty" json:"year,omitempty"`
+	Rating         float64        `bson:"rating,omitempty" json:"rating,omitempty"`
+	Runtime        int            `bson:"runtime,omitempty" json:"runtime,omitempty"`
+	Seasons        int            `bson:"seasons,omitempty" json:"seasons,omitempty"`
+	SeasonYears    map[string]int `bson:"season_years,omitempty" json:"-"` // season -> release saal (premium season ke hisaab se)
+	Genres         []string       `bson:"genres,omitempty" json:"genres,omitempty"`
+	Poster         string         `bson:"poster,omitempty" json:"poster,omitempty"`
+	Backdrop       string         `bson:"backdrop,omitempty" json:"backdrop,omitempty"`
+	Cast           []Cast         `bson:"cast,omitempty" json:"cast,omitempty"`
+	Trailer        string         `bson:"trailer,omitempty" json:"trailer,omitempty"`
+	TMDBID         int            `bson:"tmdb_id,omitempty" json:"-"`
+	CollectionID   int            `bson:"collection_id,omitempty" json:"-"`
+	CollectionName string         `bson:"collection_name,omitempty" json:"collection_name,omitempty"`
+	Parts          []Part         `bson:"parts,omitempty" json:"-"`
+	Aliases        []string       `bson:"aliases,omitempty" json:"-"`
+	Views          int            `bson:"views" json:"-"`
+	Locked         bool           `bson:"locked,omitempty" json:"-"`  // admin ne khud set kiya (/fix, /cat)
+	Access         string         `bson:"access,omitempty" json:"-"`  // "" = auto (saal ka rule) | "premium" | "free"
+	Premium        bool           `bson:"-" json:"premium,omitempty"` // sirf dikhane ke liye (calculate hota hai)
+	Created        time.Time      `bson:"created" json:"-"`
+	Updated        time.Time      `bson:"updated" json:"-"`
 }
 
 type FileDoc struct {
@@ -664,7 +665,8 @@ type Entry struct {
 	Season  int        `json:"season"`
 	Episode int        `json:"episode"`
 	Part    int        `json:"part,omitempty"`
-	EpEnd   int        `json:"ep_end,omitempty"` // pack file: Episode se EpEnd tak (E01-E09)
+	EpEnd   int        `json:"ep_end,omitempty"`  // pack file: Episode se EpEnd tak (E01-E09)
+	Premium bool       `json:"premium,omitempty"` // ye season premium hai
 	Label   string     `json:"label"`
 	Files   []FileLite `json:"files"` // sabse achhi quality pehle
 }
@@ -733,7 +735,7 @@ func (c *Catalog) entries(t *TitleDoc) []Entry {
 		}
 		en := groups[key]
 		if en == nil {
-			en = &Entry{Season: f.Season, Episode: f.Episode, Part: key.p, EpEnd: key.x, Label: entryLabel(t, f)}
+			en = &Entry{Season: f.Season, Episode: f.Episode, Part: key.p, EpEnd: key.x, Premium: c.premiumSeason(t, f.Season), Label: entryLabel(t, f)}
 			groups[key] = en
 			order = append(order, key)
 		}
@@ -1080,6 +1082,53 @@ func (c *Catalog) premium(t *TitleDoc) bool {
 	return c.premFrom > 0 && t.Year >= c.premFrom
 }
 
+// premiumSeason: series mein har season apne release saal se premium/free tay hota hai
+// (season 1 purana, season 4 naya = sirf season 4 premium). Caller RLock/Lock pakde ho.
+func (c *Catalog) premiumSeason(t *TitleDoc, season int) bool {
+	switch t.Access {
+	case "premium":
+		return true
+	case "free":
+		return false
+	}
+	if c.premFrom <= 0 {
+		return false
+	}
+	if season > 0 {
+		if y := t.SeasonYears[strconv.Itoa(season)]; y > 0 {
+			return y >= c.premFrom
+		}
+	}
+	return t.Year >= c.premFrom
+}
+
+// SetSeasonYears: sirf season-saal ka field badalta hai (baaki title jaisa ka taisa).
+func (c *Catalog) SetSeasonYears(ctx context.Context, key string, sy map[string]int) bool {
+	c.mu.Lock()
+	t := c.titles[key]
+	if t == nil || len(sy) == 0 {
+		c.mu.Unlock()
+		return false
+	}
+	t.SeasonYears = sy
+	cp := *t
+	c.mu.Unlock()
+	return c.store.SaveTitle(ctx, &cp) == nil
+}
+
+// SeriesNeedingSeasons: wo tv titles jinke season-saal abhi pata nahi (key -> tmdb id).
+func (c *Catalog) SeriesNeedingSeasons() map[string]int {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	out := map[string]int{}
+	for k, t := range c.titles {
+		if t.Kind == "tv" && t.TMDBID > 0 && len(t.SeasonYears) == 0 && len(c.byTitle[k]) > 0 {
+			out[k] = t.TMDBID
+		}
+	}
+	return out
+}
+
 // IsPremiumFile: (premium hai?, file mili?)
 func (c *Catalog) IsPremiumFile(id int) (bool, bool) {
 	c.mu.RLock()
@@ -1092,7 +1141,7 @@ func (c *Catalog) IsPremiumFile(id int) (bool, bool) {
 	if t == nil {
 		return false, true
 	}
-	return c.premium(t), true
+	return c.premiumSeason(t, f.Season), true
 }
 
 // SetAccess: access = "premium" | "free" | "" (auto). Title ka naam wapas deta hai.

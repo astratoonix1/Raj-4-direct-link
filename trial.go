@@ -70,23 +70,23 @@ func (h *Hub) TrialEligible(uid, dev string) bool {
 // trialOKLocked: "" = theek, warna wajah.
 func (h *Hub) trialOKLocked(u *User, dev string) string {
 	if h.vip.trial.Off {
-		return "Free trial abhi band hai."
+		return "The free trial is not available right now."
 	}
 	if u.TrialUsed {
-		return "Aap free trial pehle hi le chuke ho."
+		return "You have already used your free trial."
 	}
 	if u.premiumActive(time.Now()) {
-		return "Aapka premium pehle se chalu hai."
+		return "Your Premium is already active."
 	}
 	if dev == "" {
-		return "Device pehchaan nahi hui — page reload karke dobara try karo."
+		return "We could not identify your device. Please reload the page and try again."
 	}
 	if h.vip.trial.Devs[dev] {
-		return "Is device par free trial pehle hi use ho chuka hai."
+		return "A free trial has already been used on this device."
 	}
 	for _, d := range u.Dev {
 		if h.vip.trial.Devs[d] {
-			return "Is device par free trial pehle hi use ho chuka hai."
+			return "A free trial has already been used on this device."
 		}
 	}
 	return ""
@@ -97,7 +97,7 @@ func (h *Hub) ClaimTrial(uid, dev string) (time.Time, error) {
 	defer h.mu.Unlock()
 	u := h.users[uid]
 	if u == nil {
-		return time.Time{}, herr(404, "User nahi mila.")
+		return time.Time{}, herr(404, "User not found.")
 	}
 	if why := h.trialOKLocked(u, dev); why != "" {
 		return time.Time{}, herr(403, "%s", why)
@@ -115,7 +115,7 @@ func (h *Hub) ClaimTrial(uid, dev string) (time.Time, error) {
 	}
 	h.vip.trial.Count++
 	h.saveTrialLocked()
-	h.notifyUserLocked(uid, fmt.Sprintf("🎁 Free trial shuru! Premium %s tak chalu hai. Maza lo — pasand aaye to Premium plan le lena.", u.PremiumUntil.Format("02 Jan, 03:04 PM")))
+	h.notifyUserLocked(uid, fmt.Sprintf("🎁 Your free trial has started! Premium is active until %s. Enjoy — if you like it, pick a plan any time.", u.PremiumUntil.Format("02 Jan, 03:04 PM")))
 	return u.PremiumUntil, nil
 }
 

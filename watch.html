@@ -157,9 +157,13 @@ $('#cp').onclick=function(){var u=location.origin+'/w/'+ID;(navigator.clipboard?
 v.addEventListener('error',function(){if(fv&&lockedQ(fv.file.quality))return;
   var e=$('#err'),ios=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
   if(ios&&!e.querySelector('.iosx')){var u=location.origin+'/s/'+ID,d=document.createElement('div');d.className='iosx';d.style.cssText='margin-top:12px';
-    d.innerHTML='<small>iPhone ka Safari MKV / kuch audio formats nahi chalata. Video ko VLC jaise player mein kholo:</small><br><a class="btn w" style="display:inline-block;margin-top:8px;text-decoration:none" href="vlc-x-callback://x-callback-url/stream?url='+encodeURIComponent(u)+'">▶ VLC mein kholo</a>';
+    d.innerHTML='<small>iPhone Safari cannot play MKV or some audio formats. Open the video in a player such as VLC:</small><br><a class="btn w" style="display:inline-block;margin-top:8px;text-decoration:none" href="vlc-x-callback://x-callback-url/stream?url='+encodeURIComponent(u)+'">▶ Open in VLC</a>';
     e.firstChild.appendChild(d)}
-  e.classList.add('show')});
+  e.classList.add('show');
+  try{fetch('/s/'+ID,{headers:{Range:'bytes=0-0'},credentials:'same-origin'}).then(function(r){
+    if(r.status===429&&r.headers.get('X-Reason')==='device-limit'){var b=e.querySelector('b'),s=e.querySelector('small');
+      if(b)b.textContent='Device limit reached';
+      if(s)s.innerHTML='This Premium account is already playing on the maximum number of devices. Stop playback on another device, wait about 15 minutes, then try again. <a href="/#/premium" style="color:#f5a30a">See your devices</a>'}}).catch(function(){})}catch(x){}});
 v.addEventListener('playing',function(){$('#err').classList.remove('show');if(!viewSent){viewSent=true;try{fetch('/api/view/'+ID,{method:'POST',keepalive:true})}catch(e){}}});
 
 /* resume position (har file ka alag) */

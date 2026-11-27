@@ -56,6 +56,8 @@ User ke message ko Reply karo → jawab site par dikhta hai.`},
 	{"prem", "👑 Premium", `👑 PREMIUM
 /premiumon, /premiumoff — poora premium system chalu / band (turant)
 /premium — abhi ka haal + rule
+/seasons — purani series ke season-saal TMDB se bharo (series mein premium har season ke saal se lagta hai)
+/devlimit — ek premium account ek saath kitne device par chale (/devlimit 2, /devlimit off)
 /trial — free trial ka haal (/trial on, /trial off, /trial <din>) — har account/device ko ek baar
 /premium <file id> on|off|auto — ek title hamesha premium / hamesha free / saal ke rule par
 /premiumlist — premium titles ki list

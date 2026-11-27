@@ -342,7 +342,12 @@ func (a *Accounts) Register(mux *http.ServeMux) {
 			out["pays"] = h.PaymentsOf(u.ID)
 			tr["ok"] = h.TrialEligible(u.ID, reqDevCode(r))
 			tr["used"] = u.TrialUsed
+			if a.hub.PremiumActive(u.ID) && !a.isAdmin(u) {
+				lim, act := h.DevicesOf(u.ID, reqDevCode(r))
+				out["devices"] = map[string]any{"limit": lim, "active": act}
+			}
 		}
+		out["pay_eta"] = h.PayETA()
 		out["trial"] = tr
 		writeJSON(w, out)
 	})
@@ -666,6 +671,16 @@ func (a *Accounts) GateHandler(next http.Handler) http.Handler {
 		if strings.HasPrefix(r.URL.Path, "/s/") || strings.HasPrefix(r.URL.Path, "/d/") {
 			if id, ok := fileIDFromPath(r.URL.Path); ok && a.lockedForUser(id, u) {
 				deny(w, r, http.StatusPaymentRequired, "vip")
+				return
+			}
+		}
+		// premium device limit: ek account ek saath N device par hi stream/download kare
+		if u != nil && (strings.HasPrefix(r.URL.Path, "/s/") || strings.HasPrefix(r.URL.Path, "/d/")) &&
+			!a.isAdmin(u) && a.hub.PremiumActive(u.ID) {
+			if !a.hub.StreamSlot(u.ID, reqDevCode(r), devLabel(r.UserAgent())) {
+				w.Header().Set("X-Reason", "device-limit")
+				w.Header().Set("Cache-Control", "no-store")
+				http.Error(w, "Device limit reached: this Premium account is already playing on the maximum number of devices.", http.StatusTooManyRequests)
 				return
 			}
 		}

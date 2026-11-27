@@ -317,22 +317,26 @@ func (t *TMDB) FindMatch(ctx context.Context, pn ParsedName) (kind string, id in
 }
 
 type tmdbDetail struct {
-	ID               int      `json:"id"`
-	Title            string   `json:"title"`
-	Name             string   `json:"name"`
-	OriginalLanguage string   `json:"original_language"`
-	Overview         string   `json:"overview"`
-	Tagline          string   `json:"tagline"`
-	VoteAverage      float64  `json:"vote_average"`
-	ReleaseDate      string   `json:"release_date"`
-	FirstAirDate     string   `json:"first_air_date"`
-	Runtime          int      `json:"runtime"`
-	EpisodeRunTime   []int    `json:"episode_run_time"`
-	NumberOfSeasons  int      `json:"number_of_seasons"`
-	PosterPath       string   `json:"poster_path"`
-	BackdropPath     string   `json:"backdrop_path"`
-	OriginCountry    []string `json:"origin_country"`
-	Genres           []struct {
+	ID               int     `json:"id"`
+	Title            string  `json:"title"`
+	Name             string  `json:"name"`
+	OriginalLanguage string  `json:"original_language"`
+	Overview         string  `json:"overview"`
+	Tagline          string  `json:"tagline"`
+	VoteAverage      float64 `json:"vote_average"`
+	ReleaseDate      string  `json:"release_date"`
+	FirstAirDate     string  `json:"first_air_date"`
+	Runtime          int     `json:"runtime"`
+	EpisodeRunTime   []int   `json:"episode_run_time"`
+	NumberOfSeasons  int     `json:"number_of_seasons"`
+	SeasonList       []struct {
+		Number  int    `json:"season_number"`
+		AirDate string `json:"air_date"`
+	} `json:"seasons"`
+	PosterPath    string   `json:"poster_path"`
+	BackdropPath  string   `json:"backdrop_path"`
+	OriginCountry []string `json:"origin_country"`
+	Genres        []struct {
 		ID   int    `json:"id"`
 		Name string `json:"name"`
 	} `json:"genres"`
@@ -409,6 +413,7 @@ func (t *TMDB) FetchTitle(ctx context.Context, kind string, id int) (*TitleDoc, 
 		if len(d.EpisodeRunTime) > 0 {
 			td.Runtime = d.EpisodeRunTime[0]
 		}
+		td.SeasonYears = seasonYearsOf(d.SeasonList)
 	}
 	if len(date) >= 4 {
 		td.Year = atoi(date[:4])
@@ -556,4 +561,32 @@ func (t *TMDB) Suggest(ctx context.Context, q string) ([]Suggestion, error) {
 		}
 	}
 	return out, nil
+}
+
+// seasonYearsOf: TMDB ke seasons[] se {season: release saal}.
+func seasonYearsOf(list []struct {
+	Number  int    `json:"season_number"`
+	AirDate string `json:"air_date"`
+}) map[string]int {
+	out := map[string]int{}
+	for _, s := range list {
+		if s.Number > 0 && len(s.AirDate) >= 4 {
+			if y := atoi(s.AirDate[:4]); y > 1900 {
+				out[strconv.Itoa(s.Number)] = y
+			}
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+// SeasonYears: sirf tv ke liye — har season ka release saal (premium season ke hisaab se lagta hai).
+func (t *TMDB) SeasonYears(ctx context.Context, id int) (map[string]int, error) {
+	td, err := t.FetchTitle(ctx, "tv", id)
+	if err != nil {
+		return nil, err
+	}
+	return td.SeasonYears, nil
 }

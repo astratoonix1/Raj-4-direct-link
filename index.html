@@ -89,6 +89,23 @@ img{display:block}
 .ppf img{width:100%;height:100%;object-fit:cover}
 .trial{background:linear-gradient(135deg,rgba(255,226,122,.16),rgba(245,163,10,.1));border:1px solid rgba(245,163,10,.6);border-radius:14px;padding:14px 16px;margin:0 0 16px;text-align:center}
 .trial .tt{font-size:1.05rem;margin-bottom:4px}.trial .ts{font-size:.8rem;color:#cfd0dc;margin-bottom:10px}
+.pst{background:linear-gradient(135deg,rgba(34,211,238,.10),rgba(139,92,246,.12));border:1px solid rgba(139,92,246,.5);border-radius:14px;padding:14px 16px;margin:0 0 16px}
+.pst.ok{background:rgba(34,197,94,.10);border-color:rgba(34,197,94,.55)}.pst.bad{background:rgba(239,68,68,.10);border-color:rgba(239,68,68,.55)}
+.pst-h{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}.pst-t{font-weight:800}.pst-a{color:#cfd0dc;font-size:.85rem}
+.steps{list-style:none;margin:0 0 10px;padding:0;position:relative}
+.steps li{display:flex;gap:12px;align-items:flex-start;padding:0 0 14px;position:relative}
+.steps li:last-child{padding-bottom:0}
+.steps li:not(:last-child)::after{content:"";position:absolute;left:11px;top:24px;bottom:0;width:2px;background:#34343f}
+.steps li.done:not(:last-child)::after{background:#22c55e}
+.steps i{flex:none;width:24px;height:24px;border-radius:50%;border:2px solid #34343f;background:#15151d;display:grid;place-items:center;font-style:normal;font-size:.75rem;color:#fff}
+.steps li.done i{background:#22c55e;border-color:#22c55e}
+.steps li.cur i{border-color:#8b5cf6;background:#8b5cf6;animation:pstp 1.4s infinite}
+@keyframes pstp{0%{box-shadow:0 0 0 0 rgba(139,92,246,.6)}70%{box-shadow:0 0 0 9px rgba(139,92,246,0)}100%{box-shadow:0 0 0 0 rgba(139,92,246,0)}}
+.steps b{display:block;font-size:.92rem}.steps span{display:block;font-size:.76rem;color:var(--mut);margin-top:1px}
+.pst-n{margin:0;font-size:.82rem;color:#cfd0dc;line-height:1.5}
+.devs .dsub{margin:0 0 8px;font-size:.8rem;color:var(--mut)}
+.dlist{list-style:none;margin:0;padding:0}.dlist li{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid #26262f;font-size:.88rem}
+.dlist em{font-style:normal;font-size:.68rem;background:#8b5cf6;color:#fff;border-radius:999px;padding:1px 8px;margin-left:6px}.dlist small{color:var(--mut)}
 .qhint{margin:0 0 10px;font-size:.82rem;color:#cfd0dc;display:flex;flex-direction:column;gap:6px}
 .qhint .qb{background:rgba(139,92,246,.14);border:1px solid rgba(139,92,246,.45);border-radius:10px;padding:7px 12px}
 .qhint .ib{background:rgba(245,163,10,.12);border:1px solid rgba(245,163,10,.5);border-radius:10px;padding:7px 12px}
@@ -205,6 +222,7 @@ select.sel{background:var(--bg3);color:#fff;border:1px solid var(--line);border-
 .q{white-space:nowrap}
 .ep .qs{margin-left:auto}
 @media(max-width:600px){.ep{flex-wrap:wrap}.ep .nm{display:none}.ep .qs{width:100%;margin-left:48px}}
+.ep.lk .pn{background:#f5a30a}
 .erng{display:inline-block;background:rgba(34,211,238,.14);border:1px solid rgba(34,211,238,.5);color:#7fe9ff;border-radius:999px;padding:2px 10px;font-size:.72rem;font-weight:700;white-space:nowrap}
 .ep{display:flex;align-items:center;gap:14px;background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:8px;transition:background .2s,border-color .2s;cursor:pointer}
 .ep:hover{background:var(--bg3);border-color:#444}
@@ -974,21 +992,40 @@ function renderPremium(){
   if(!PREM){app.innerHTML='<div class="page"><div class="pbox"><h1>👑 Premium</h1><p class="sub">Premium is not available right now.</p></div></div>';return}
   app.innerHTML='<div class="page"><div class="pbox prem"><div class="sub">Loading…</div></div></div>';
   var sel=0;
+  var showMore=false,lastD=null;
   function paint(d){
+    lastD=d;
     if(d.me){ME=d.me;paintProfile()}
     var plans=d.plans||[],base=plans.length?plans[0].price/plans[0].months:0,active=isPrem(),h='';
     var sp='';for(var i=0;i<16;i++)sp+='<i style="left:'+Math.round(Math.random()*100)+'%;top:'+Math.round(Math.random()*100)+'%;animation-delay:'+(Math.random()*3).toFixed(2)+'s"></i>';
     h+='<div class="phero"><div class="sparks">'+sp+'</div><div class="pcrown">'+CROWN+'</div><h1 class="shine">Premium</h1><p>'+(d.from_year?esc(String(d.from_year))+' and all later courses':'Unlock all premium courses')+'</p></div>';
     h+=active?'<div class="pstat on">👑 Premium is active — '+(!ME.until||Date.parse(ME.until)-Date.now()>3e10?'<b>lifetime</b> — no expiry.':'valid until <b>'+fmtD(ME.until)+'</b> ('+Math.max(0,Math.ceil((Date.parse(ME.until)-Date.now())/864e5))+' days left). You can extend it anytime.')+'</div>':'<div class="pstat">'+(ME?'You are on the free plan.':'Sign in first to get Premium.')+'</div>';
+    if(ME&&d.devices&&d.devices.limit>0){var dv=d.devices;
+      h+='<div class="paybox devs"><h3>📱 Your devices</h3><p class="dsub">Premium plays on up to <b>'+dv.limit+' device'+(dv.limit>1?'s':'')+'</b> at the same time. A device frees up after 15 minutes without playing.</p>'+
+        (dv.active.length?'<ul class="dlist">'+dv.active.map(function(x){return '<li><span>'+esc(x.label||'Device')+(x.this?' <em>this device</em>':'')+'</span><small>'+(x.ago_s<90?'playing now':Math.round(x.ago_s/60)+' min ago')+'</small></li>'}).join('')+'</ul>':'<p class="dsub">No device is playing right now.</p>')+'</div>'}
+    var pays0=d.pays||[],pend=pays0.filter(function(p){return p.status==='pending'}),lastDone=pays0.filter(function(p){return p.status!=='pending'})[0];
+    function etaTxt(m){return !m?'a few hours':m<60?'about '+Math.max(5,Math.round(m/5)*5)+' minutes':'about '+Math.round(m/60)+' hour'+(Math.round(m/60)>1?'s':'')}
+    function agoTxt(s){var m=Math.max(0,Math.round((Date.now()-Date.parse(s))/6e4));return m<1?'just now':m<60?m+' min ago':m<1440?Math.round(m/60)+' h ago':Math.round(m/1440)+' d ago'}
+    if(ME&&pend.length){var pp=pend[0];
+      h+='<div class="pst"><div class="pst-h"><span class="pst-t">⏳ Payment under review</span><span class="pst-a">'+pp.months+(pp.months===1?' month':' months')+' · ₹'+pp.amount+'</span></div>'+
+        '<ol class="steps"><li class="done"><i>✓</i><div><b>Payment submitted</b><span>'+agoTxt(pp.created)+' · UTR '+esc(pp.utr)+'</span></div></li>'+
+        '<li class="cur"><i></i><div><b>Verifying your UTR</b><span>The owner is matching it with the payment received</span></div></li>'+
+        '<li><i></i><div><b>Premium activated</b><span>You will get a 🔔 notification and this page updates by itself</span></div></li></ol>'+
+        '<p class="pst-n">Payments are usually verified in <b>'+etaTxt(d.pay_eta)+'</b>. <b>No need to message the owner</b> — we will tell you here the moment it is done.'+(pend.length>1?' ('+pend.length+' payments are waiting.)':'')+'</p></div>'}
+    else if(ME&&lastDone&&lastDone.status==='approved'&&Date.now()-Date.parse(lastDone.done)<864e5&&active)
+      h+='<div class="pst ok"><div class="pst-h"><span class="pst-t">✅ Payment verified</span><span class="pst-a">'+lastDone.months+(lastDone.months===1?' month':' months')+' · ₹'+lastDone.amount+'</span></div><p class="pst-n">Thank you! Your Premium is active. Enjoy all premium courses.</p></div>';
+    else if(ME&&lastDone&&lastDone.status==='rejected'&&Date.now()-Date.parse(lastDone.done)<1728e5&&!active)
+      h+='<div class="pst bad"><div class="pst-h"><span class="pst-t">❌ We could not verify UTR '+esc(lastDone.utr)+'</span></div><p class="pst-n">Please check the Transaction ID in your payment app and submit it again below. If you are sure you paid, message the owner with a screenshot.</p></div>';
     var TR=d.trial||{};
-    if(TR.on&&!active&&(!ME||TR.ok))h+='<div class="trial"><div class="tt">🎁 <b>'+TR.days+' din ka FREE Premium trial</b></div><div class="ts">Pehle try karo, pasand aaye tab plan lo. Har account aur device par sirf ek baar.</div>'+(ME?'<button class="btn gold wide" id="trb" type="button">🎁 Free trial shuru karo</button>':'<button class="btn gold wide" id="trl" type="button">Sign In karke free trial lo</button>')+'</div>';
+    if(TR.on&&!active&&(!ME||TR.ok))h+='<div class="trial"><div class="tt">🎁 <b>'+TR.days+'-day FREE Premium trial</b></div><div class="ts">Try Premium first and pick a plan only if you like it. One trial per account and device.</div>'+(ME?'<button class="btn gold wide" id="trb" type="button">🎁 Start free trial</button>':'<button class="btn gold wide" id="trl" type="button">Sign in to get the free trial</button>')+'</div>';
     h+='<div class="plans">'+plans.map(function(p,i){var pm=Math.round(p.price/p.months),sv=base?Math.round((1-(p.price/p.months)/base)*100):0;
       return '<button class="plan'+(sel===p.months?' sel':'')+'" data-m="'+p.months+'">'+(sv>0&&i===plans.length-1?'<em>BEST VALUE</em>':(sv>0?'<em class="s">Save '+sv+'%</em>':''))+'<span class="pl">'+esc(p.label)+'</span><b>₹'+p.price+'</b><span class="pm">₹'+pm+'/month</span></button>'}).join('')+'</div>';
     var P=plans.filter(function(p){return p.months===sel})[0];
-    if(P&&ME){
+    if(P&&ME&&pend.length&&!showMore)h+='<button class="pclear" type="button" id="pmore">Paid for another plan? Add another payment</button>';
+    else if(P&&ME){
       h+='<div class="paybox"><h3>Pay ₹'+P.price+' ('+esc(P.label)+')</h3><div class="payrow">'+(d.qr?'<img class="qr" src="'+esc(d.qr)+'" alt="QR">':'')+
         '<ol><li>'+(d.qr?'Scan the QR code and pay':'Pay via UPI:')+' <b>₹'+P.price+'</b>.</li>'+(d.upi?'<li>UPI ID: <b id="upi">'+esc(d.upi)+'</b> <button class="cp" id="cpu" type="button">Copy</button></li>':'')+'<li>After paying, enter the <b>Transaction ID / UTR</b> (12 digits) shown in your payment app below.</li><li>The owner will verify the payment and activate Premium. This can take a few hours.</li></ol></div>'+
-        '<form id="pf"><input id="utr" placeholder="Transaction ID / UTR (jaise 123456789012)" maxlength="30" autocomplete="off" required><div class="err" id="er"></div><button class="btn gold wide" type="submit">✅ Maine pay kar diya</button></form></div>';
+        '<form id="pf"><input id="utr" placeholder="Transaction ID / UTR (e.g. 123456789012)" maxlength="30" autocomplete="off" required><div class="err" id="er"></div><button class="btn gold wide" type="submit">✅ I have paid</button></form></div>';
     }else if(P&&!ME){
       h+='<div class="paybox"><button class="btn gold wide" id="lg" type="button">Sign In karke aage badho</button></div>';
     }
@@ -1004,7 +1041,8 @@ function renderPremium(){
     box.querySelectorAll('[data-pd]').forEach(function(b){b.onclick=function(){post('/api/premium/pay/delete',{id:b.getAttribute('data-pd')}).then(function(){toast('Removed');load()}).catch(function(e){toast(e.message)})}});
     var pc=$('#pclr');if(pc)pc.onclick=function(){post('/api/premium/pay/delete',{id:'all'}).then(function(){toast('Cleared');load()}).catch(function(e){toast(e.message)})};
     var lg=$('#lg');if(lg)lg.onclick=function(){try{sessionStorage.setItem('atx-next','#/premium')}catch(e){}renderLogin()};
-    var trb=$('#trb');if(trb)trb.onclick=function(){trb.disabled=true;post('/api/premium/trial',{}).then(function(){return api('/api/me')}).then(function(r){ME=r.user;paintProfile();burst('big');toast('🎁 Free trial shuru ho gaya!');load()}).catch(function(e){trb.disabled=false;toast(e.message||'Trial nahi mila')})};
+    var pm=$('#pmore');if(pm)pm.onclick=function(){showMore=true;paint(lastD)};
+    var trb=$('#trb');if(trb)trb.onclick=function(){trb.disabled=true;post('/api/premium/trial',{}).then(function(){return api('/api/me')}).then(function(r){ME=r.user;paintProfile();burst('big');toast('🎁 Your free trial has started!');load()}).catch(function(e){trb.disabled=false;toast(e.message||'Could not start the trial')})};
     var trl=$('#trl');if(trl)trl.onclick=function(){location.hash='#/login'};
     var cpu=$('#cpu');if(cpu)cpu.onclick=function(){try{navigator.clipboard.writeText(d.upi);toast('UPI ID copied')}catch(e){toast(d.upi)}};
     var pf=$('#pf');if(pf)submit(pf,function(){return post('/api/premium/pay',{months:sel,utr:$('#utr').value.trim()}).then(function(){toast('Request sent ✓ The owner will verify it and activate Premium');sel=0;load()})});
@@ -1013,7 +1051,13 @@ function renderPremium(){
   }
   function load(){return api('/api/premium').then(paint).catch(function(){var b=$('.prem');if(b)b.innerHTML='<div class="sub">Could not load, please try again.</div>'})}
   load();
-  pageTimer=setInterval(function(){if(document.hidden||!ME||isPrem())return;api('/api/me').then(function(r){if(r.user&&r.user.premium){ME=r.user;paintProfile();burst('big');toast('👑 Premium activated!');load()}}).catch(function(){})},10000);
+  pageTimer=setInterval(function(){
+    if(document.hidden||!ME)return;
+    if(lastD&&(lastD.pays||[]).some(function(p){return p.status==='pending'})){
+      api('/api/premium').then(function(d){var sg=function(x){return (x.pays||[]).map(function(p){return p.id+p.status}).join()};
+        if(sg(d)!==sg(lastD)){var was=isPrem();paint(d);api('/api/me').then(function(r){if(r.user){ME=r.user;paintProfile();if(!was&&isPrem())burst('big')}}).catch(function(){})}}).catch(function(){});
+      return}
+    if(isPrem())return;api('/api/me').then(function(r){if(r.user&&r.user.premium){ME=r.user;paintProfile();burst('big');toast('👑 Premium activated!');load()}}).catch(function(){})},10000);
 }
 
 function renderLogin(mode,pre){
@@ -1141,9 +1185,9 @@ function renderPerson(name){
   api('/api/person?name='+encodeURIComponent(name)).then(function(d){
     reg(d.items);
     $('#ppf').innerHTML=d.photo?'<img src="'+esc(d.photo)+'" alt="">':esc(name.charAt(0));
-    $('#psub').textContent=d.items.length?d.items.length+' title'+(d.items.length>1?'s':'')+' on '+SITE:'Is actor ki koi film abhi site par nahi hai.';
-    $('#grid').innerHTML=d.items.length?d.items.map(function(c){return cardHTML(c)}).join(''):'<div class="empty" style="grid-column:1/-1"><b>Abhi kuch nahi 😕</b><a href="#/request" style="color:var(--red)">Request karo</a> — hum add kar denge.</div>';
-  }).catch(function(){$('#psub').textContent='Load nahi hua.'});
+    $('#psub').textContent=d.items.length?d.items.length+' title'+(d.items.length>1?'s':'')+' on '+SITE:'No titles with this actor on the site yet.';
+    $('#grid').innerHTML=d.items.length?d.items.map(function(c){return cardHTML(c)}).join(''):'<div class="empty" style="grid-column:1/-1"><b>Nothing here yet 😕</b><a href="#/request" style="color:var(--red)">Request a title</a> and we will add it.</div>';
+  }).catch(function(){$('#psub').textContent='Could not load.'});
 }
 /* ---- hero par trailer ka muted auto-preview ---- */
 var PVH=null;
@@ -1180,7 +1224,7 @@ function openTrailer(id,title){
   closeTrailer();if(!id)return;
   var m=document.createElement('div');m.id='trm';m.className='trm';
   m.innerHTML='<div class="trb"><button class="trx" aria-label="Close">✕</button><div class="trv"><iframe src="https://www.youtube-nocookie.com/embed/'+encodeURIComponent(id)+'?autoplay=1&rel=0&playsinline=1&modestbranding=1" title="'+esc(title||'Trailer')+'" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe></div>'+
-    '<a class="trl" target="_blank" rel="noopener" href="https://www.youtube.com/watch?v='+encodeURIComponent(id)+'">Video nahi chal raha? YouTube par kholo ↗</a></div>';
+    '<a class="trl" target="_blank" rel="noopener" href="https://www.youtube.com/watch?v='+encodeURIComponent(id)+'">Video not playing? Open on YouTube ↗</a></div>';
   m.addEventListener('click',function(e){if(e.target===m||e.target.closest('.trx'))closeTrailer()});
   document.body.appendChild(m);document.addEventListener('keydown',trEsc);
 }
@@ -1188,7 +1232,7 @@ window.addEventListener('hashchange',closeTrailer);
 /* ---- share card: WhatsApp ---- */
 function shareTitle(t){
   var url=location.origin+'/share/'+encodeURIComponent(t.key);
-  var txt='🎬 '+t.title+(t.year?' ('+t.year+')':'')+' — '+SITE+' par dekho\n'+url;
+  var txt='🎬 '+t.title+(t.year?' ('+t.year+')':'')+' — watch on '+SITE+'\n'+url;
   window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank','noopener');
 }
 function renderTitle(key){
@@ -1202,16 +1246,17 @@ function renderTitle(key){
     var cw=getCW().filter(function(x){return x.key===key})[0];
     var first=d.entries&&d.entries[0]&&d.entries[0].files.length?pickF(d.entries[0].files):null;
     var playId=cw?cw.fid:(first?first.id:0);
+    function lockedFid(fid){var r=false;(d.entries||[]).forEach(function(e){if(e.files.some(function(f){return f.id==fid}))r=locked(e)});return r}
     var inl=inList(key),lk=getLikes().indexOf(key)>=0;
     var h='<section class="dhero"><div class="bd" style="background-image:url(\''+esc(t.backdrop||t.poster||THUMB||'')+'\');'+(t.backdrop?'':'filter:blur(30px);transform:scale(1.2)')+'"></div>'+
       '<div class="din"><div class="poster">'+poster(t)+'</div><div><h1>'+esc(t.title)+'</h1>'+(t.tagline?'<p class="tag">“'+esc(t.tagline)+'”</p>':'')+
       '<div class="meta">'+meta.join('<span>•</span>')+'</div>'+
       ((t.genres&&t.genres.length)?'<div class="meta">'+t.genres.map(esc).join(' · ')+'</div>':'')+
-      '<div class="btns">'+(playId?(locked(t)?'<button class="btn gold" id="dp">👑 Unlock Premium</button>':'<button class="btn play" id="dp">'+ICON.play+' '+(cw?'Resume':'Play')+'</button>'):'')+
+      '<div class="btns">'+(playId?(lockedFid(playId)?'<button class="btn gold" id="dp">👑 Unlock Premium</button>':'<button class="btn play" id="dp">'+ICON.play+' '+(cw?'Resume':'Play')+'</button>'):'')+
       '<button class="btn ghost'+(inl?' on':'')+'" id="dl">'+(inl?ICON.check:ICON.plus)+' My List</button>'+
       '<button class="btn ghost'+(lk?' on':'')+'" id="dk">'+ICON.like+' Like</button>'+
       (t.trailer?'<button class="btn ghost" id="dtr">▶ Trailer</button>':'')+'<button class="btn wa-share" id="dsh">'+ICON.wa+' WhatsApp</button></div></div></div></section>';
-    h+='<div class="body fade">'+(locked(t)?'<div class="pnote">👑 This is a <b>Premium</b> course. <a href="#/premium" data-prem>Get Premium</a> to watch.</div>':'')+'<div class="wa"></div>';
+    h+='<div class="body fade">'+(locked(t)?'<div class="pnote">👑 This is a <b>Premium</b> course. <a href="#/premium" data-prem>Get Premium</a> to watch.</div>':(d.entries||[]).some(locked)?'<div class="pnote">👑 Some seasons of this series are <b>Premium</b> (marked with 👑). <a href="#/premium" data-prem>Get Premium</a> to watch them.</div>':'')+'<div class="wa"></div>';
     if(t.overview)h+='<h3>Story</h3><p class="ov">'+esc(t.overview)+'</p>';
     if(t.cast&&t.cast.length)h+='<h3>Cast</h3><div class="casts">'+t.cast.map(function(c){return '<div class="cast" data-p="'+esc(c.name)+'" role="link" tabindex="0"><div class="pf">'+(c.photo?'<img loading="lazy" src="'+esc(c.photo)+'" alt="">':esc(c.name.charAt(0)))+'</div><b>'+esc(c.name)+'</b><span>'+esc(c.role||'')+'</span></div>'}).join('')+'</div>';
     // episodes / files
@@ -1225,7 +1270,7 @@ function renderTitle(key){
       var n=Object.keys(set).map(Number).sort(function(a,b){return a-b}),out=[],i=0;
       while(i<n.length){var j=i;while(j+1<n.length&&n[j+1]===n[j]+1)j++;out.push(n[i]===n[j]?'E'+n[i]:'E'+n[i]+'–E'+n[j]);i=j+1}
       return out.join(', ')}
-    if(hasS)h+='<div class="sbox"><div class="shd">📺 Seasons <small>👇 Season chuno, phir episode par click karo</small></div><div class="seasons" id="ssn">'+snums.map(function(s,i){var l=seasons[s],cv=covText(l);return '<button class="schip'+(i?'':' on')+'" data-s="'+s+'"><b>'+(s?'Season '+s:'Other')+'</b><span>'+(cv||l.length+' file'+(l.length>1?'s':''))+'</span></button>'}).join('')+'</div></div><div class="ssum" id="ssum"></div>';
+    if(hasS)h+='<div class="sbox"><div class="shd">📺 Seasons <small>👇 Choose a season, then tap an episode</small></div><div class="seasons" id="ssn">'+snums.map(function(s,i){var l=seasons[s],cv=covText(l);return '<button class="schip'+(i?'':' on')+'" data-s="'+s+'"><b>'+(l.length&&locked(l[0])?'👑 ':'')+(s?'Season '+s:'Other')+'</b><span>'+(cv||l.length+' file'+(l.length>1?'s':''))+'</span></button>'}).join('')+'</div></div><div class="ssum" id="ssum"></div>';
     h+='<div class="qhint" id="qhint"></div><div id="eps"></div>';
     if(d.parts&&d.parts.length){reg([]);h+='<h3>'+esc(t.collection_name||'More parts')+'</h3><div class="track-wrap"><div class="track" style="padding-left:0;padding-right:0">'+d.parts.map(function(p){
       var c={key:p.key||'',title:p.title,year:p.year,poster:p.poster,category:'Movie'};if(p.key)cardData[p.key]=c;
@@ -1236,24 +1281,24 @@ function renderTitle(key){
     var curSeason;
     function paintHint(){
       var el=$('#qhint');if(!el)return;var o='',f0=d.entries&&d.entries[0]&&d.entries[0].files.length?pickF(d.entries[0].files):null;
-      if(netWant()&&f0)o+='<div class="qb">⭐ Aapke net ke hisaab se <b>'+esc(f0.quality)+'</b> best rahega'+(QLOCK&&!isPrem()&&NETQ==='high'?' <span style="color:var(--mut)">(720p+ VIP ke liye)</span>':'')+' — Play dabate hi wahi chalega.</div>';
-      if(isIOS()){var anyMp4=(d.entries||[]).some(function(e){return e.files.some(isMP4)});o+='<div class="ib">📱 iPhone par <b>MP4</b> file best chalti hai'+(anyMp4?' — MP4 wali pehle chuni gayi hai.':'. Is title ki file MKV hai: na chale to video page par "▶ VLC mein kholo" dabana.')+'</div>'}
+      if(netWant()&&f0)o+='<div class="qb">⭐ Best for your connection: <b>'+esc(f0.quality)+'</b>'+(QLOCK&&!isPrem()&&NETQ==='high'?' <span style="color:var(--mut)">(720p and above is for VIP)</span>':'')+' — it plays automatically when you press Play.</div>';
+      if(isIOS()){var anyMp4=(d.entries||[]).some(function(e){return e.files.some(isMP4)});o+='<div class="ib">📱 On iPhone, <b>MP4</b> files play best'+(anyMp4?' — the MP4 version was picked for you.':'. This title is MKV: if it does not play, tap “▶ Open in VLC” on the video page.')+'</div>'}
       el.innerHTML=o}
     function paintEps(s){
       var list=(seasons[s]||entries);
       var sm=$('#ssum');if(sm){var cv=covText(list);sm.innerHTML=(s?'<b>Season '+s+'</b>':'<b>Files</b>')+' · '+list.length+' item'+(list.length>1?'s':'')+(cv?' · <span class="erng">Episodes: '+esc(cv)+'</span>':'')}
       $('#eps').innerHTML=list.map(function(e){
         var pf=pickF(e.files);curSeason=s;
-        return '<div class="ep" data-fid="'+pf.id+'"><div class="pn">'+ICON.play+'</div><div class="lb">'+esc(e.label||t.title)+(e.ep_end>e.episode?'<div class="erng" style="margin-top:4px">📦 Episode '+e.episode+' se '+e.ep_end+' tak</div>':'')+'</div><div class="nm">'+esc(pf.name)+'</div><div class="qs">'+
+        return '<div class="ep'+(locked(e)?' lk':'')+'" data-fid="'+pf.id+'"'+(locked(e)?' data-lk="1"':'')+'><div class="pn">'+ICON.play+'</div><div class="lb">'+(locked(e)?'👑 ':'')+esc(e.label||t.title)+(e.ep_end>e.episode?'<div class="erng" style="margin-top:4px">📦 Episodes '+e.episode+' to '+e.ep_end+'</div>':'')+'</div><div class="nm">'+esc(pf.name)+'</div><div class="qs">'+
           e.files.map(function(f){var x=fext(f);return '<button class="q'+(f.id===pf.id&&netWant()?' rec':'')+'" data-fid="'+f.id+'" title="'+esc(fmtSize(f.size))+'">'+esc(f.quality)+(f.size?' · '+esc(fmtSize(f.size)):'')+(isIOS()&&x&&!isMP4(f)?'<span class="ftag">'+esc(x.toUpperCase())+'</span>':'')+'</button>'}).join('')+'</div></div>'}).join('');
     }
     paintEps(hasS?snums[0]:undefined);paintHint();
     netProbe().then(function(){if(!document.getElementById('eps'))return;var f1=d.entries&&d.entries[0]&&d.entries[0].files.length?pickF(d.entries[0].files):null;if(f1&&!cw)playId=f1.id;paintEps(curSeason);paintHint()});
     heroPreview(t);
     $$('.cast').forEach(function(c){var go=function(){location.hash='#/p/'+encodeURIComponent(c.getAttribute('data-p'))};c.onclick=go;c.onkeydown=function(e){if(e.key==='Enter')go()}});
-    $('#eps').onclick=function(e){var q=e.target.closest('.q'),ep=e.target.closest('.ep');if((q||ep)&&locked(t)){goPremium();return}if(q){location.href='/w/'+q.getAttribute('data-fid');return}if(ep)location.href='/w/'+ep.getAttribute('data-fid')};
+    $('#eps').onclick=function(e){var q=e.target.closest('.q'),ep=e.target.closest('.ep');if(ep&&ep.getAttribute('data-lk')){goPremium();return}if(q){location.href='/w/'+q.getAttribute('data-fid');return}if(ep)location.href='/w/'+ep.getAttribute('data-fid')};
     var ssn=$('#ssn');if(ssn)ssn.onclick=function(e){var b=e.target.closest('.schip');if(!b)return;$$('.schip',ssn).forEach(function(x){x.classList.toggle('on',x===b)});paintEps(+b.getAttribute('data-s'))};
-    var dp=$('#dp');if(dp)dp.onclick=function(){if(locked(t)){goPremium();return}location.href='/w/'+playId};
+    var dp=$('#dp');if(dp)dp.onclick=function(){if(lockedFid(playId)){goPremium();return}location.href='/w/'+playId};
     var dtr=$('#dtr');if(dtr)dtr.onclick=function(){openTrailer(t.trailer,t.title)};
     $('#dsh').onclick=function(){shareTitle(t)};
     $('#dl').onclick=function(){var on=toggleList(t);this.classList.toggle('on',on);this.innerHTML=(on?ICON.check:ICON.plus)+' My List'};

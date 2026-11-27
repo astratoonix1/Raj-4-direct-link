@@ -53,10 +53,15 @@ type vipState struct {
 	idxLast int         // source channel: yahan tak ke messages dekh liye
 	bf      bfState     // backfill (poora channel scan) ki halat
 	trial   trialState
+	dev     devState
 }
 
 // loadVipSetting: Hub load ke time settings docs se (hub.go call karta hai)
 func (h *Hub) loadVipSetting(id string, b []byte) {
+	if id == cDevLimitKey {
+		h.loadDevLimit(b)
+		return
+	}
 	if id == cTrialKey {
 		h.loadTrial(b)
 		return

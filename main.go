@@ -1715,6 +1715,7 @@ func main() {
 	hub.OnUserMsg = app.notifyUserMsg
 	app.hub = hub
 	app.acc = &Accounts{Gemini: NewGemini(cfg.GeminiKey, cfg.GeminiModel, os.Getenv("GEMINI_BASE")), Admins: cfg.AdminEmails, ApkURL: cfg.ApkURL, ApkVersion: cfg.ApkVersion, PayQR: cfg.PayQR, PayUPI: cfg.PayUPI, Gate: cfg.RequireLogin, hub: hub, cat: cat, tmdb: tm, owner: OwnerInfo{Name: cfg.OwnerName, About: cfg.OwnerAbout, Photo: cfg.OwnerPhoto, Telegram: cfg.OwnerTelegram}}
+	app.startSeasonBackfill(nil) // purani series ke season-saal (premium season ke hisaab se) — ek baar, background mein
 	if cfg.TGStringSession != "" {
 		app.idx = NewAutoIndexer(app.cat, app.pipe, hub, newUserSearcher(cfg, logger), func(t string) { app.toAdmins(t, nil) })
 		app.acc.Idx = app.idx
